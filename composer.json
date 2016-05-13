@@ -1,0 +1,29 @@
+{
+  "name": "agerecompany/php-importer",
+  "description": "Universal fast importer tables for different formats, such as Excel or CSV",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "importer",
+    "csv",
+    "excel",
+    "agere"
+  ],
+  "authors": [
+    {
+      "name": "Sergiy Popov",
+      "email": "popow.sergiy@gmail.com",
+      "homepage": "http://agere.com.ua/",
+      "role": "Developer"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "php": "^5.5"
+  },
+  "autoload": {
+    "psr-0": {
+      "Agere\\Import": "src/"
+    }
+  }
+}
