@@ -23,8 +23,8 @@
     "agerecompany/db": "dev-master"
   },
   "autoload": {
-    "psr-0": {
-      "Agere\\Import": "src/"
+    "psr-4": {
+      "Agere\\Importer": "src/"
     }
   }
 }
