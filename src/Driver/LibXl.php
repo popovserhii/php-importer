@@ -10,7 +10,6 @@
  */
 namespace Agere\Importer\Driver;
 
-use Agere\Importer\DriverInterface;
 use ExcelBook;
 
 class LibXl implements DriverInterface
@@ -23,9 +22,6 @@ class LibXl implements DriverInterface
         'locale' => 'UTF-8',
         'sheet' => '',
     ];
-
-    //private $username = "Stanislav Kharchenko";
-    //private $password = "linux-ecd71d7698a2a61e0f0f233b43pcf4se";
 
     public function __construct($filename, array $config = [])
     {
@@ -51,6 +47,7 @@ class LibXl implements DriverInterface
 
     /**
      * {@inheritDoc}
+     * @link http://www.libxl.com/spreadsheet.html#lastRow
      */
     public function firstRow()
     {
@@ -71,6 +68,14 @@ class LibXl implements DriverInterface
     public function read($row, $column)
     {
         return $this->getXlBook()->read($row, $column);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function config()
+    {
+        return $this->config;
     }
 
     protected function getXlBook()

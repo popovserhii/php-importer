@@ -7,7 +7,7 @@
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 13.05.2016 13:38
  */
-namespace Agere\Importer;
+namespace Agere\Importer\Driver;
 
 interface DriverInterface
 {
@@ -47,4 +47,11 @@ interface DriverInterface
      * @return mixed Return cell value
      */
     public function read($row, $column);
+
+    /**
+     * Get configuration array
+     *
+     * @return array
+     */
+    public function config();
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Import Factory
+ * Driver Factory
  *
  * @category Agere
  * @package Agere_Importer
@@ -11,7 +11,7 @@ namespace Agere\Importer\Factory;
 
 use Agere\Importer\Driver;
 
-class ImportFactory
+class DriverFactory
 {
     protected $drivers = [
         'libxl' => Driver\LibXl::class,

@@ -1,28 +1,15 @@
 <?php
 /**
- * Filter Nomenclature Code
+ * Filter float number
  *
  * @category Agere
- * @package Agere_Spare
+ * @package Agere_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 27.04.2016 20:08
  */
-namespace Agere\Spare\Service\Import\Helper;
+namespace Agere\Importer\Helper;
 
-use Agere\Spare\Service\Import\ImportService;
-
-class FilterFloat {
-
-	/** @var ImportService */
-	/*protected $import;
-
-	public function __construct(ImportService $import) {
-		$this->import = $import;
-	}
-
-	public function getImport() {
-		return $this->import;
-	}*/
+class FilterFloat implements FilterInterface {
 
 	/**
 	 * @param $num
