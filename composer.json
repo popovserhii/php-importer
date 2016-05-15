@@ -20,7 +20,7 @@
   "minimum-stability": "dev",
   "require": {
     "php": "^5.5",
-    "agerecompany/db": "dev-master"
+    "agerecompany/db": "dev-dev"
   },
   "autoload": {
     "psr-4": {
