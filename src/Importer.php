@@ -1,6 +1,6 @@
 <?php
 /**
- * Temporary import service
+ * Import service
  *
  * @category Agere
  * @package Agere_Spare
@@ -10,13 +10,14 @@
 namespace Agere\Importer;
 
 use Zend\Stdlib\Exception;
+use Agere\Importer\Factory\DriverFactory;
 use Agere\Importer\Driver\DriverInterface;
 use Agere\Db\Db;
 
-abstract class Importer
+class Importer
 {
-    /** @var DriverInterface */
-    protected $driver;
+    /** @var DriverFactory */
+    protected $driverFactory;
 
     /** @var Db */
     protected $db;
@@ -47,20 +48,21 @@ abstract class Importer
 
     protected $helpers = [
         'filter' => [
-            'float' => Helper\FilterFloat::class
+            'int' => Helper\FilterInt::class,
+            'float' => Helper\FilterFloat::class,
         ],
         'prepare' => [],
     ];
 
-    public function __construct(DriverInterface $driver, Db $db)
+    public function __construct(DriverFactory $driverFactory, Db $db)
     {
-        $this->driver = $driver;
+        $this->driverFactory = $driverFactory;
         $this->db = $db;
     }
 
-    public function import()
+    public function import($task, $filename)
     {
-        $driver = $this->getDriver();
+        $driver = $this->getDriver($task, $filename);
         $this->profiling();
 
         $tables = [];
@@ -108,6 +110,7 @@ abstract class Importer
                 if (!$item) {
                     continue;
                 }
+
                 // save row
                 if (!isset($fields['__exclude']) || !$fields['__exclude']) {
                     if (isset($fields['__foreign'])) {
@@ -269,7 +272,7 @@ abstract class Importer
             return $helpers[$key];
         }
 
-        $config = $this->getDriver()->config();
+        $config = $this->getDriverFactory()->getConfig();
         if (isset($this->helpers[$pool][$name])) {
             $helperClass = $this->helpers[$pool][$name];
         } elseif (isset($config['helpers'][$pool][$name])) {
@@ -281,9 +284,25 @@ abstract class Importer
         return $helpers[$key] = new $helperClass($this);
     }
 
-    public function getDriver()
+    public function getDriverFactory()
     {
-        return $this->driver;
+        return $this->driverFactory;
+    }
+
+    /**
+     * Get driver
+     *
+     * @param $configTask
+     * @param $filename
+     * @return DriverInterface
+     */
+    public function getDriver($configTask, $filename) {
+        $driverFactory = $this->getDriverFactory();
+        /** @var DriverInterface $driver */
+        $driver = $driverFactory->create($configTask);
+        $driver->filename($filename);
+
+        return $driver;
     }
 
     public function getTableFieldsMap($table, $field = false)
@@ -296,7 +315,7 @@ abstract class Importer
         }
 
         $fieldsMap = $this->fieldsMap[$this->getTableOrder($table)];
-        if ($field === false) {
+        if (false === $field) {
             return $fieldsMap;
         }
         if (isset($fieldsMap[$field])) {

@@ -23,10 +23,23 @@ class LibXl implements DriverInterface
         'sheet' => '',
     ];
 
-    public function __construct($filename, array $config = [])
+    public function __construct(array $config = [])
     {
-        $this->filename = $filename;
         $this->config = array_merge($this->config, $config);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function filename($filename = null)
+    {
+        if ($filename) {
+            $this->filename = $filename;
+
+            return $this;
+        }
+
+        return $this->filename;
     }
 
     /**
@@ -34,7 +47,7 @@ class LibXl implements DriverInterface
      */
     public function firstColumn()
     {
-        return $this->getXlBook()->firstCol();
+        return $this->xlBook()->firstCol();
     }
 
     /**
@@ -42,7 +55,7 @@ class LibXl implements DriverInterface
      */
     public function lastColumn()
     {
-        return $this->getXlBook()->lastCol();
+        return $this->xlBook()->lastCol();
     }
 
     /**
@@ -51,7 +64,7 @@ class LibXl implements DriverInterface
      */
     public function firstRow()
     {
-        return $this->getXlBook()->firstRow();
+        return $this->xlBook()->firstRow();
     }
 
     /**
@@ -59,7 +72,7 @@ class LibXl implements DriverInterface
      */
     public function lastRow()
     {
-        return $this->getXlBook()->lastRow();
+        return $this->xlBook()->lastRow();
     }
 
     /**
@@ -67,7 +80,7 @@ class LibXl implements DriverInterface
      */
     public function read($row, $column)
     {
-        return $this->getXlBook()->read($row, $column);
+        return $this->xlBook()->read($row, $column);
     }
 
     /**
@@ -78,7 +91,7 @@ class LibXl implements DriverInterface
         return $this->config;
     }
 
-    protected function getXlBook()
+    protected function xlBook()
     {
         static $xlSheet;
 

@@ -9,39 +9,85 @@
  */
 namespace Agere\Importer\Factory;
 
+use Zend\Stdlib\Exception;
 use Agere\Importer\Driver;
 
 class DriverFactory
 {
+    const KEY_TASK = 'tasks';
+    /** @var array */
+    protected $config = [];
+
+    /** @var array */
     protected $drivers = [
         'libxl' => Driver\LibXl::class,
         'csv' => Driver\Csv::class,
     ];
 
-    public function create($config)
+    public function __construct(array $config)
     {
+        // standardizes config key
+        foreach ($config['tasks'] as $key => $value) {
+            unset($config['tasks'][$key]);
+            $config['tasks'][$this->getConfigKey($key)] = $value;
+        }
+
+        $this->config = $config;
+    }
+
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    public function create($configType)
+    {
+        $taskKey = $this->getConfigKey($configType);
+        if (!isset($this->config['tasks'][$taskKey])) {
+            throw new Exception\RuntimeException(
+                sprintf('Import task "%s" (alias:%s] not registered', $taskKey, $configType)
+            );
+        }
+
+        $config = $this->config['tasks'][$taskKey];
+
+
         if (!isset($config['driver'])) {
-            throw new \Exception('Driver key must be set in the configuration array');
+            throw new Exception\RuntimeException('Driver key must be set in the configuration array');
         }
 
-        if (is_array($config['driver'])) {
-            $driverKey = $config['driver']['name'];
-        } else {
-            $driverKey = $config['driver'];
-        }
+        //if (is_array($config['driver'])) {
+            //$driverKey = $config['driver']['name'];
+        //} else {
+            //$driverKey = $config['driver'];
+        //}
 
-        $driverKey = strtolower($driverKey);
+        $driverKey = strtolower($config['driver']);
         if (isset($this->drivers[$driverKey])) {
             $driverClass = $this->drivers[$driverKey];
-        } elseif (isset($config['class'])) {
-            $driverClass = $config['class'];
+        } elseif (isset($this->config['class'])) {
+            $driverClass = $this->config['class'];
         } else {
-            throw new \Exception('Any driver not registered for ' . $driverKey);
+            throw new Exception\RuntimeException('Any driver not registered for ' . $driverKey);
         }
+
+        $config['options'] = isset($this->config['driver_options'][$driverKey])
+            ? $this->config['driver_options'][$driverKey]
+            : [];
 
         $driver = new $driverClass($config);
 
         return $driver;
     }
 
+    /**
+     * Get standardizes config key
+     *
+     * @param $key
+     * @return string
+     */
+    protected function getConfigKey($key)
+    {
+        return preg_replace("/[^A-Za-z0-9]/", '', $key);
+    }
 }
