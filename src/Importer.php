@@ -455,16 +455,6 @@ class Importer
         return false;
     }
 
-    public function bindMessages($messenger)
-    {
-        die('Move this method in called action');
-        foreach ($this->getMessages() as $namespace => $messages) {
-            foreach ($messages as $message) {
-                $messenger->setNamespace($namespace)->addMessage($message);
-            }
-        }
-    }
-
     public function getDb()
     {
         return $this->db;
