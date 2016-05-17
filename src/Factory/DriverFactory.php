@@ -14,7 +14,6 @@ use Agere\Importer\Driver;
 
 class DriverFactory
 {
-    const KEY_TASK = 'tasks';
     /** @var array */
     protected $config = [];
 
@@ -71,7 +70,7 @@ class DriverFactory
             throw new Exception\RuntimeException('Any driver not registered for ' . $driverKey);
         }
 
-        $config['options'] = isset($this->config['driver_options'][$driverKey])
+        $config += isset($this->config['driver_options'][$driverKey])
             ? $this->config['driver_options'][$driverKey]
             : [];
 
@@ -88,6 +87,6 @@ class DriverFactory
      */
     protected function getConfigKey($key)
     {
-        return preg_replace("/[^A-Za-z0-9]/", '', $key);
+        return strtolower(preg_replace("/[^A-Za-z0-9]/", '', $key));
     }
 }

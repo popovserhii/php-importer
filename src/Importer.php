@@ -64,9 +64,12 @@ class Importer
     {
         $driver = $this->getDriver($task, $filename);
         $this->profiling();
+		$this->fieldsMap = $this->fieldsMap ?: $driver->config()['fields_map'];
 
+		//\Zend\Debug\Debug::dump($this->fieldsMap); die(__METHOD__.__LINE__);
         $tables = [];
         for ($col = $driver->firstColumn(); $col < $driver->lastColumn(); $col++) {
+			
             $title = $driver->read($driver->firstRow(), $col);
             foreach ($this->fieldsMap as $i => $table) {
                 if (isset($table[$title])) {
@@ -86,7 +89,7 @@ class Importer
             }
         }
         ksort($tables);
-
+		
         // skip head row
         /** @link http://www.libxl.com/spreadsheet.html#lastRow */
         for ($row = ($driver->firstRow() + 1); $row < $driver->lastRow(); $row++) {

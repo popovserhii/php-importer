@@ -18,5 +18,4 @@ class FilterInt implements FilterInterface {
 	public function filter($num) {
 		return (int) $num;
 	}
-
 }

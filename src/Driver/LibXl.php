@@ -20,11 +20,12 @@ class LibXl implements DriverInterface
         'username' => '',
         'password' => '',
         'locale' => 'UTF-8',
-        'sheet' => '',
+        'sheet' => 0,
     ];
 
     public function __construct(array $config = [])
     {
+		//\Zend\Debug\Debug::dump($config); die(__METHOD__);
         $this->config = array_merge($this->config, $config);
     }
 
@@ -47,7 +48,17 @@ class LibXl implements DriverInterface
      */
     public function firstColumn()
     {
-        return $this->xlBook()->firstCol();
+		//\Zend\Debug\Debug::dump($this->filename); die(__METHOD__);
+		//$xlBook = $this->xlBook();
+		
+		//$xlSheet = $this->config['sheet'] ? $xlBook->getSheet($this->config['sheet']) : $xlBook->getSheet();
+		
+		//$xlSheet = $this->xlBook();
+		//\Zend\Debug\Debug::dump($xlSheet->name());die(__METHOD__);
+		//\Zend\Debug\Debug::dump($xlSheet->name());
+		//\Zend\Debug\Debug::dump(get_class_methods($xlSheet)); die(__METHOD__);
+		
+        return $this->xlSheet()->firstCol();
     }
 
     /**
@@ -55,7 +66,7 @@ class LibXl implements DriverInterface
      */
     public function lastColumn()
     {
-        return $this->xlBook()->lastCol();
+        return $this->xlSheet()->lastCol();
     }
 
     /**
@@ -64,7 +75,7 @@ class LibXl implements DriverInterface
      */
     public function firstRow()
     {
-        return $this->xlBook()->firstRow();
+        return $this->xlSheet()->firstRow();
     }
 
     /**
@@ -72,7 +83,7 @@ class LibXl implements DriverInterface
      */
     public function lastRow()
     {
-        return $this->xlBook()->lastRow();
+        return $this->xlSheet()->lastRow();
     }
 
     /**
@@ -80,7 +91,7 @@ class LibXl implements DriverInterface
      */
     public function read($row, $column)
     {
-        return $this->xlBook()->read($row, $column);
+        return $this->xlSheet()->read($row, $column);
     }
 
     /**
@@ -93,22 +104,33 @@ class LibXl implements DriverInterface
 
     protected function xlBook()
     {
-        static $xlSheet;
+        static $xlBook;
 
-        if (!$xlSheet) {
+        if (!$xlBook) {
             $splFile = new \SplFileInfo($this->filename);
 
             $useXlsxFormat = false;
             if ($splFile->getExtension() === 'xlsx') {
                 $useXlsxFormat = true;
             }
+			
             $xlBook = new \ExcelBook($this->config['username'], $this->config['password'], $useXlsxFormat);
             $xlBook->setLocale($this->config['locale']);
             $xlBook->loadFile($splFile->getPathname());
-
-            $xlSheet = trim($this->config['sheet']) ? $xlBook->getSheet($this->config['sheet']) : $xlBook->getSheet();
         }
-
-        return $xlSheet;
+		
+        return $xlBook;
     }
+	
+	protected function xlSheet() 
+	{
+		static $xlSheet;
+		
+		if (!$xlSheet) {
+			$xlBook = $this->xlBook();
+			$xlSheet = $this->config['sheet'] ? $xlBook->getSheet($this->config['sheet']) : $xlBook->getSheet();
+		}
+		
+		return $xlSheet;
+	}
 }
