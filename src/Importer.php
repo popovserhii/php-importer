@@ -66,12 +66,13 @@ class Importer
         $this->profiling();
 		$this->fieldsMap = $this->fieldsMap ?: $driver->config()['fields_map'];
 
-		//\Zend\Debug\Debug::dump($this->fieldsMap); die(__METHOD__.__LINE__);
+		
         $tables = [];
         for ($col = $driver->firstColumn(); $col < $driver->lastColumn(); $col++) {
-			
             $title = $driver->read($driver->firstRow(), $col);
             foreach ($this->fieldsMap as $i => $table) {
+				//\Zend\Debug\Debug::dump($table, '$table');
+				//\Zend\Debug\Debug::dump(isset($table[$title]), 'isset($table[' . $title . '])');
                 if (isset($table[$title])) {
                     $tables[$this->getTableOrder($table['__table'])][] = ['index' => $col, 'name' => $title];
                 } elseif (isset($table['__dynamic'])) {
@@ -90,6 +91,7 @@ class Importer
         }
         ksort($tables);
 		
+		//\Zend\Debug\Debug::dump([$tables]); die(__METHOD__.__LINE__);
         // skip head row
         /** @link http://www.libxl.com/spreadsheet.html#lastRow */
         for ($row = ($driver->firstRow() + 1); $row < $driver->lastRow(); $row++) {
@@ -113,7 +115,7 @@ class Importer
                 if (!$item) {
                     continue;
                 }
-
+				//\Zend\Debug\Debug::dump($item); die(__METHOD__.__LINE__);
                 // save row
                 if (!isset($fields['__exclude']) || !$fields['__exclude']) {
                     if (isset($fields['__foreign'])) {
@@ -249,17 +251,25 @@ class Importer
                 $cellValue = $this->getHelper($filter, 'filter')->filter($cellValue);
             }
         }
+		
         // prepared filed
         if (isset($params['__prepare'])) {
             foreach ($params['__prepare'] as $prepare) {
                 $cellValue = $this->getHelper($prepare, 'prepare')->prepare($cellValue);
             }
         }
-        if (is_string($params)) { // is field name
+		
+        if (is_string($params)) { 
+			// if field not has any preparations
             $row[$params] = ($cellValue !== null) ? $cellValue : '';
+		} elseif (isset($params['name']) && is_array($cellValue)) {
+			// if field contains values for different fields of one table
+			$row = array_merge($row, $cellValue);
         } elseif (isset($params['name'])) {
+			// if field has preparation
             $row[$params['name']] = ($cellValue !== null) ? $cellValue : '';
         } else {
+			// if field contains values for multi-dimensional save
             $row = $cellValue;
         }
 
