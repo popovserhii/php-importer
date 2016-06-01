@@ -50,6 +50,7 @@ class Importer
         'filter' => [
             'int' => Helper\FilterInt::class,
             'float' => Helper\FilterFloat::class,
+            'percentToInt' => Helper\FilterPercentToInt::class,
         ],
         'prepare' => [],
     ];
