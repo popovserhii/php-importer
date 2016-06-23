@@ -19,7 +19,7 @@
   ],
   "minimum-stability": "dev",
   "require": {
-    "php": "^5.5",
+    "php": ">=5.5",
     "agerecompany/db": "dev-dev"
   },
   "autoload": {
