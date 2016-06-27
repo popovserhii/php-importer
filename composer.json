@@ -17,10 +17,10 @@
       "role": "Developer"
     }
   ],
-  "minimum-stability": "dev",
+  "minimum-stability": "prefer-stable",
   "require": {
     "php": ">=5.5",
-    "agerecompany/db": "dev-master"
+    "agerecompany/db": "~0.1"
   },
   "autoload": {
     "psr-4": {
