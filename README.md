@@ -1,6 +1,13 @@
 # PHP Importer
 Universal importer for different table formats like excel or csv
 
+## Installation
+
+Install it with ``composer``
+```sh
+composer require agerecompany/php-importer -o
+```
+
 ## Supported drivers
 1. LibXl ([commercial](http://www.libxl.com/))
 2. Csv (not implemented yet)
