@@ -92,7 +92,7 @@ class Importer
         }
         ksort($tables);
 		
-		//\Zend\Debug\Debug::dump([$tables]); die(__METHOD__.__LINE__);
+		//\Zend\Debug\Debug::dump($tables); die(__METHOD__.__LINE__);
         // skip head row
         /** @link http://www.libxl.com/spreadsheet.html#lastRow */
         for ($row = ($driver->firstRow() + 1); $row < $driver->lastRow(); $row++) {
@@ -133,7 +133,7 @@ class Importer
         // execution time of the script
         $this->messages['info'][] = sprintf('Total Execution Time: %s Mins', $this->profiling(false));
         if (!$hasErrors = $this->hasErrors()) {
-            $this->messages['success'][] = 'File has been imported successfully!';
+            $this->messages['success'][] = 'Data has been imported successfully!';
         }
 
         return !$hasErrors;
@@ -172,6 +172,7 @@ class Importer
 
     protected function saveMode(array $row, $table)
     {
+        //\Zend\Debug\Debug::dump([$row, $table]); die(__METHOD__);
         $isDeep = $this->isDeep($row);
         $db = $this->getDb();
         if ($isDeep) {
@@ -184,6 +185,14 @@ class Importer
     protected function updateMode(array $row, $table)
     {
         if (isset($row['id']) && $row['id']) {
+            static $sqlMode;
+            if (!$sqlMode) {
+                // @todo Винести це в конігурацію.
+                // INSERT/UPDATE statement in STRICT mode
+                // throw error SQLSTATE[HY000]: General error: 1364 Field 'fieldName' doesn't have a default value
+                $this->getDb()->exec('SET SESSION sql_mode = "NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"');
+                $sqlMode = true;
+            }
             $this->saveMode($row, $table);
         }
     }
@@ -307,14 +316,14 @@ class Importer
      * Get driver
      *
      * @param $configTask
-     * @param $filename
+     * @param $source
      * @return DriverInterface
      */
-    public function getDriver($configTask, $filename) {
+    public function getDriver($configTask, $source) {
         $driverFactory = $this->getDriverFactory();
         /** @var DriverInterface $driver */
         $driver = $driverFactory->create($configTask);
-        $driver->filename($filename);
+        $driver->source($source);
 
         return $driver;
     }

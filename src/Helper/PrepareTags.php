@@ -9,14 +9,14 @@
  */
 namespace Agere\Spare\Service\Import\Helper;
 
-use Agere\Spare\Service\Import\ImportService;
+use Agere\Importer\Importer;
 
 class PrepareTags {
 
-    /** @var ImportService */
+    /** @var Importer */
     protected $import;
 
-    public function __construct(ImportService $import) {
+    public function __construct(Importer $import) {
         $this->import = $import;
     }
 

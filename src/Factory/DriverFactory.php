@@ -21,6 +21,7 @@ class DriverFactory
     protected $drivers = [
         'libxl' => Driver\LibXl::class,
         'csv' => Driver\Csv::class,
+        'soap' => Driver\Soap::class,
     ];
 
     public function __construct(array $config)

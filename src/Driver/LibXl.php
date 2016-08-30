@@ -32,7 +32,7 @@ class LibXl implements DriverInterface
     /**
      * {@inheritDoc}
      */
-    public function filename($filename = null)
+    public function source($filename = null)
     {
         if ($filename) {
             $this->filename = $filename;

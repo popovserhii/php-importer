@@ -12,12 +12,14 @@ namespace Agere\Importer\Driver;
 interface DriverInterface
 {
     /**
-     * Set/get imported file name
+     * Set/get imported source name
+     *
+     * Can be file name, api url or other value to source
      *
      * @param string|null $name
      * @return string|self
      */
-    public function filename($name = null);
+    public function source($name = null);
 
     /**
      * Get first column
