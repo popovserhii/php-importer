@@ -27,38 +27,6 @@ class SoapCombinedAdapterTest extends TestCase
 
     public function testGetConnection()
     {
-        /*
-         'soap' => [
-                'default' => 'raz',
-                'connection' => [
-                    'raz_options' => [
-                        'wsdl' => 'http://188.0.133.37/raz_web/ws/raz-disabled.1cws?wsdl',
-                        'options' => [
-                            'login' => 'web_account',
-                            'password' => '1q2w3e4r!2',
-                            //'login' => 'storage@agere.com.ua',
-                            //'password' => 'peraspera',
-                            'soap_version' => SOAP_1_2,
-                            //'soap_version' => SOAP_1_1,
-                            'cache_wsdl' => WSDL_CACHE_NONE,
-                        ],
-                    ],
-                    'viza_options' => [
-                        'wsdl' => 'http://188.0.133.37/viza/ws/viza-disabled.1cws?wsdl',
-                        'options' => [
-                            'login' => 'web_account',
-                            'password' => '1q2w3e4r!2',
-                            //'login' => 'storage@agere.com.ua',
-                            //'password' => 'peraspera',
-                            'soap_version' => SOAP_1_2,
-                            //'soap_version' => SOAP_1_1,
-                            'cache_wsdl' => WSDL_CACHE_NONE,
-                        ],
-                    ],
-                ],
-            ],
-         */
-
         $adapter = new SoapCombinedAdapter([
             'bar_connection' => new SoapClient('http://example.com/web/ws/disabled.1cws?wsdl'),
             'foo_connection' => new SoapClient('http://example.com/web/ws/enabled.1cws?wsdl'),
