@@ -21,15 +21,17 @@ class SoapCombinedAdapter
      */
     protected $soapClients = [];
 
-    protected $defaultConnection = '';
+    protected $defaultConnection = 'default_connection';
 
     public function __construct($soapClients, $default = '')
     {
         if (!is_array($soapClients)) {
             $soapClients = [$soapClients];
         }
+        if ($default) {
+            $this->defaultConnection = $default;
+        }
         $this->soapClients = $soapClients;
-        $this->defaultConnection = $default;
     }
 
     public function getDefaultConnection()

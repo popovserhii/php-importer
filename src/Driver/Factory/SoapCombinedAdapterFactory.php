@@ -31,7 +31,7 @@ class SoapCombinedAdapterFactory
         foreach ($config['connection'] as $name => $connection) {
             $clients[$name] = new SoapClient($connection['wsdl'], $connection['options']);
         }
-        $soapAdapter = new SoapCombinedAdapter($clients);
+        $soapAdapter = new SoapCombinedAdapter($clients, $config['default_connection']);
 
         return $soapAdapter;
     }
