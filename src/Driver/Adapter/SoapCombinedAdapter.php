@@ -9,6 +9,7 @@
  */
 namespace Agere\Importer\Driver\Adapter;
 
+use Interop\Container\ContainerInterface;
 use Zend\Soap\Client as SoapClient;
 
 class SoapCombinedAdapter
@@ -20,12 +21,29 @@ class SoapCombinedAdapter
      */
     protected $soapClients = [];
 
-    public function __construct($soapClients)
+    protected $defaultConnection = '';
+
+    public function __construct($soapClients, $default = '')
     {
         if (!is_array($soapClients)) {
             $soapClients = [$soapClients];
         }
         $this->soapClients = $soapClients;
+        $this->defaultConnection = $default;
+    }
+
+    public function getDefaultConnection()
+    {
+        return $this->getConnection($this->defaultConnection);
+    }
+
+    public function getConnection($name)
+    {
+        if (isset($this->soapClients[$name])) {
+            return $this->soapClients[$name];
+        }
+
+        return false;
     }
 
     /**

@@ -7,13 +7,17 @@
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 19.12.15 17:44
  */
-namespace Agere\Importer\Factory;
+namespace Agere\Importer;
 
+use Interop\Container\ContainerInterface;
 use Zend\Stdlib\Exception;
 use Agere\Importer\Driver;
 
 class DriverFactory
 {
+    /** @var ContainerInterface */
+    protected $container;
+
     /** @var array */
     protected $config = [];
 
@@ -24,14 +28,17 @@ class DriverFactory
         'soap' => Driver\Soap::class,
     ];
 
-    public function __construct(array $config)
+    public function __construct(array $config, ContainerInterface $container = null)
     {
+        $config['drivers'] = array_merge($this->drivers, (isset($config['drivers']) ? $config['drivers']: []));
+        $config['tasks'] = isset($config['tasks']) ? $config['tasks'] : [];
         // standardizes config key
         foreach ($config['tasks'] as $key => $value) {
             unset($config['tasks'][$key]);
             $config['tasks'][$this->getConfigKey($key)] = $value;
         }
 
+        $this->container = $container;
         $this->config = $config;
     }
 
@@ -45,39 +52,40 @@ class DriverFactory
         $taskKey = $this->getConfigKey($configType);
         if (!isset($this->config['tasks'][$taskKey])) {
             throw new Exception\RuntimeException(
-                sprintf('Import task "%s" (alias:%s] not registered', $taskKey, $configType)
+                sprintf('Import task "%s" [alias:%s] is not registered', $taskKey, $configType)
             );
         }
 
         $config = $this->config['tasks'][$taskKey];
-
-
         if (!isset($config['driver'])) {
             throw new Exception\RuntimeException('Driver key must be set in the configuration array');
         }
 
-        //if (is_array($config['driver'])) {
-            //$driverKey = $config['driver']['name'];
-        //} else {
-            //$driverKey = $config['driver'];
-        //}
-
         $driverKey = strtolower($config['driver']);
-        if (isset($this->drivers[$driverKey])) {
-            $driverClass = $this->drivers[$driverKey];
-        } elseif (isset($this->config['class'])) {
-            $driverClass = $this->config['class'];
+        if (isset($this->config['drivers'][$driverKey])) {
+            $driverClass = $this->config['drivers'][$driverKey];
         } else {
             throw new Exception\RuntimeException('Any driver not registered for ' . $driverKey);
         }
 
-        $config += isset($this->config['driver_options'][$driverKey])
-            ? $this->config['driver_options'][$driverKey]
-            : [];
-
-        $driver = new $driverClass($config);
+        $config += isset($this->config['driver_options'][$driverKey]) ? $this->config['driver_options'][$driverKey] : [];
+        $driver = $this->createDriver($driverClass, $config);
 
         return $driver;
+    }
+
+    /**
+     * Create driver using Container or "new" operator
+     *
+     * @param string $driverClass
+     * @param array $config
+     * @return Driver\DriverInterface
+     */
+    protected function createDriver($driverClass, array $config): Driver\DriverInterface
+    {
+        return isset($this->container)
+            ? $this->container->get($driverClass, $config)
+            : new $driverClass($config);
     }
 
     /**

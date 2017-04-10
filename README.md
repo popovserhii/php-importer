@@ -63,6 +63,18 @@ if ($importer->import('discount-card', '/path/to/file.xls')) {
 }
 ```
 
+### Advanced Usage
+Most popular PHP frameworks implement IoC pattern and they also implement standard interface `Interop\Container\ContainerInterface`.
+This library support this functionality. You can pass your own IoC to *Factory* and be happy with creating objects. 
+```
+$pdo = new PDO('mysql:host=myhost;dbname=mydb', 'login', 'password'); 
+$db = (new Db())->setPdo($pdo);
+
+$container = /* getYourContainer */;
+$factory = new DriverFactory($config, $container);
+$importer = new Importer($factory, $db);
+```
+
 ### With ZF2
 
 There's a [module](https://github.com/agerecompany/zfc-importer-module) for that!

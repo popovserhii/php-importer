@@ -10,6 +10,7 @@
  */
 namespace Agere\Importer\Driver;
 
+use Agere\Importer\Driver\Factory\SoapCombinedAdapterFactory;
 use Zend\Soap\Client as SoapClient;
 use Agere\Importer\Driver\Adapter\SoapCombinedAdapter;
 
@@ -23,28 +24,10 @@ class Soap implements DriverInterface
 
     protected $soapAdapter;
 
-    public function __construct(array $config = [])
+    public function __construct(array $config = [], SoapCombinedAdapter $soapAdapter = null)
     {
         $this->config = $config;
-        $this->soapAdapter = $this->create($config);
-    }
-
-    /**
-     * @todo Цей метод повинен бути у фабриці.
-     * Реалізувати можливість використання нативних фабрик SM (zf2, symfony)
-     *
-     * @param $config
-     * @return SoapCombinedAdapter
-     */
-    public function create($config)
-    {
-        $clients = [];
-        foreach ($config['connection'] as $config) {
-            $clients[] = new SoapClient($config['wsdl'], $config['options']);
-        }
-        $soapAdapter = new SoapCombinedAdapter($clients);
-
-        return $soapAdapter;
+        $this->soapAdapter = $soapAdapter ?: (new SoapCombinedAdapterFactory($config))();
     }
 
     /**
@@ -66,8 +49,6 @@ class Soap implements DriverInterface
         if (!isset($this->sheet[0])) {
             $sheet = $this->sheet();
             $row = next($sheet);
-
-            //\Zend\Debug\Debug::dump($row); die(__METHOD__);
             foreach ($row as $name => $value) {
                 $this->sheet[0][] = $name;
             }

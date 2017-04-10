@@ -10,7 +10,6 @@
 namespace Agere\Importer;
 
 use Zend\Stdlib\Exception;
-use Agere\Importer\Factory\DriverFactory;
 use Agere\Importer\Driver\DriverInterface;
 use Agere\Db\Db;
 
