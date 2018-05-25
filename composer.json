@@ -1,13 +1,12 @@
 {
-  "name": "agerecompany/php-importer",
+  "name": "popov/php-importer",
   "description": "Universal fast importer tables for different formats, such as Excel or CSV",
   "type": "library",
   "license": "MIT",
   "keywords": [
     "importer",
     "csv",
-    "excel",
-    "agere"
+    "excel"
   ],
   "authors": [
     {
@@ -17,14 +16,13 @@
       "role": "Developer"
     }
   ],
-  "minimum-stability": "stable",
   "require": {
     "php": "^5.6||^7.0",
-    "agerecompany/db": "~0.1"
+    "popov/db": "~0.1"
   },
   "autoload": {
     "psr-4": {
-      "Agere\\Importer\\": "src/"
+      "Popov\\Importer\\": "src/"
     }
   }
 }
