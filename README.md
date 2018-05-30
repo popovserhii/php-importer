@@ -5,7 +5,7 @@ Universal importer for different table formats like excel or csv
 
 Install it with ``composer``
 ```sh
-composer require agerecompany/php-importer -o
+composer require popov/php-importer -o
 ```
 
 ## Supported drivers
@@ -24,9 +24,9 @@ composer require agerecompany/php-importer -o
 
 ### Standalone
 ```php
-use Agere\Importer\Factory\DriverFactory;
-use Agere\Importer\Importer;
-use Agere\Db\Db;
+use Popov\Importer\Factory\DriverFactory;
+use Popov\Importer\Importer;
+use Popov\Db\Db;
 
 $config = [
     'tasks' => [
@@ -43,7 +43,7 @@ $config = [
                     // shortcut name
                     '__codename' => 'discount',
                     // unique field name for avoid duplicate
-                    '__identifier' => 'code'
+                    '__identifier' => 'serial'
                 ],
             ],
         ],
@@ -77,4 +77,4 @@ $importer = new Importer($factory, $db);
 
 ### With ZF2
 
-There's a [module](https://github.com/agerecompany/zfc-importer-module) for that!
+There's a [module](https://github.com/popovserhii/zfc-importer-module) for that!
