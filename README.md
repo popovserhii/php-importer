@@ -77,4 +77,4 @@ $importer = new Importer($factory, $db);
 
 ### With ZF2
 
-There's a [module](https://github.com/popovserhii/zfc-importer-module) for that!
+There's a [module](https://github.com/popovserhii/zfc-importer) for that!
