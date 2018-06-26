@@ -24,7 +24,7 @@ composer require popov/php-importer -o
 
 ### Standalone
 ```php
-use Popov\Importer\Factory\DriverFactory;
+use Popov\Importer\Factory\DriverCreator;
 use Popov\Importer\Importer;
 use Popov\Db\Db;
 
@@ -53,7 +53,7 @@ $config = [
 $pdo = new PDO('mysql:host=myhost;dbname=mydb', 'login', 'password'); 
 $db = (new Db())->setPdo($pdo);
 
-$factory = new DriverFactory($config);
+$factory = new DriverCreator($config);
 $importer = new Importer($factory, $db);
 
 if ($importer->import('discount-card', '/path/to/file.xls')) {
@@ -71,7 +71,7 @@ $pdo = new PDO('mysql:host=myhost;dbname=mydb', 'login', 'password');
 $db = (new Db())->setPdo($pdo);
 
 $container = /* getYourContainer */;
-$factory = new DriverFactory($config, $container);
+$factory = new DriverCreator($config, $container);
 $importer = new Importer($factory, $db);
 ```
 

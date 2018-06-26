@@ -2,22 +2,22 @@
 /**
  * Driver Interface
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 13.05.2016 13:38
  */
-namespace Agere\Importer\Driver;
+namespace Popov\Importer\Driver;
 
 interface DriverInterface
 {
     /**
      * Set/get imported source name
      *
-     * Can be file name, api url or other value to source
+     * Can be file name, api url or other value to source.
      *
-     * @param string|null $name
-     * @return string|self
+     * @param mixed $name
+     * @return mixed On set return self object on get return value set previously
      */
     public function source($name = null);
 
@@ -50,18 +50,19 @@ interface DriverInterface
     public function lastRow();
 
     /**
-     * Read cell
+     * Get data from a specific cell
      *
      * @param int $row
-     * @param int $column
-     * @return mixed Return cell value
+     * @param int $column If a column isn't passed than entire row will be returned
+     * @return mixed
      */
-    public function read($row, $column);
+    public function read($row, $column = null);
 
     /**
-     * Get configuration array
+     * Set/get driver based configuration
      *
-     * @return array
+     * @param array $config
+     * @return mixed On set return self object on get return value set previously
      */
-    public function config();
+    public function &config(array $config = null);
 }

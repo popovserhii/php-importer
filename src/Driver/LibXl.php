@@ -2,13 +2,13 @@
 /**
  * LibXl driver
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 13.05.2016 13:35
  * @link https://github.com/iliaal/php_excel
  */
-namespace Agere\Importer\Driver;
+namespace Popov\Importer\Driver;
 
 use ExcelBook;
 
@@ -89,7 +89,7 @@ class LibXl implements DriverInterface
     /**
      * {@inheritDoc}
      */
-    public function read($row, $column)
+    public function read($row, $column = null)
     {
         return $this->xlSheet()->read($row, $column);
     }

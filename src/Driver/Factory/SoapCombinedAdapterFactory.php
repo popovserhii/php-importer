@@ -2,18 +2,18 @@
 /**
  * Soap Factory
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 06.04.2017 19:20
  */
-namespace Agere\Importer\Driver\Factory;
+namespace Popov\Importer\Driver\Factory;
 
 use AsseticBundle\Exception\RuntimeException;
 use Interop\Container\ContainerInterface;
 
 use Zend\Soap\Client as SoapClient;
-use Agere\Importer\Driver\Adapter\SoapCombinedAdapter;
+use Popov\Importer\Driver\Adapter\SoapCombinedAdapter;
 
 class SoapCombinedAdapterFactory
 {

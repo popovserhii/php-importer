@@ -2,14 +2,14 @@
 /**
  * Enter description here...
  *
- * @category Agere
- * @package Agere_<package>
+ * @category Popov
+ * @package Popov_<package>
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 04.04.2017 19:55
  */
-namespace AgereTest\Importer\Fake;
+namespace PopovTest\Importer\Fake;
 
-use Agere\Importer\Driver\DriverInterface;
+use Popov\Importer\Driver\DriverInterface;
 
 class DriverDummy implements DriverInterface
 {

@@ -2,18 +2,18 @@
 /**
  * Enter description here...
  *
- * @category Agere
- * @package Agere_<package>
+ * @category Popov
+ * @package Popov_<package>
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 10.04.2017 14:00
  */
-namespace AgereTest\Importer\Adapter;
+namespace PopovTest\Importer\Adapter;
 
 use Mockery;
 use Zend\Stdlib\Exception;
 use PHPUnit_Framework_TestCase as TestCase;
 use Zend\Soap\Client as SoapClient;
-use Agere\Importer\Driver\Adapter\SoapCombinedAdapter;
+use Popov\Importer\Driver\Adapter\SoapCombinedAdapter;
 
 
 class SoapCombinedAdapterTest extends TestCase

@@ -2,12 +2,12 @@
 /**
  * Adapter for merge result from two or more SOAP services
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 29.08.2016 11:26
  */
-namespace Agere\Importer\Driver\Adapter;
+namespace Popov\Importer\Driver\Adapter;
 
 use Interop\Container\ContainerInterface;
 use Zend\Soap\Client as SoapClient;

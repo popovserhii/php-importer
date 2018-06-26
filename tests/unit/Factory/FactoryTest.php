@@ -2,20 +2,20 @@
 /**
  * Importer Factory Test
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 17.03.2017 16:54
  */
-namespace AgereTest\Importer\Factory;
+namespace PopovTest\Importer\Factory;
 
 use Interop\Container\ContainerInterface;
 use Mockery;
 use Zend\Stdlib\Exception;
 use PHPUnit_Framework_TestCase as TestCase;
-use Agere\Importer\DriverFactory;
-use Agere\Importer\Driver\Soap;
-use AgereTest\Importer\Fake\DriverDummy;
+use Popov\Importer\DriverCreator;
+use Popov\Importer\Driver\Soap;
+use PopovTest\Importer\Fake\DriverDummy;
 
 
 class FactoryTest extends TestCase
@@ -29,14 +29,14 @@ class FactoryTest extends TestCase
 
     public function testThrowExceptionIfTaskNotRegistered()
     {
-        $factory = new DriverFactory(['tasks' => []]);
+        $factory = new DriverCreator(['tasks' => []]);
         $this->expectException(Exception\RuntimeException::class);
         $factory->create('notexist');
     }
 
     public function testThrowExceptionIfTaskIssetBuDriverNotRegistered()
     {
-        $factory = new DriverFactory([
+        $factory = new DriverCreator([
             'tasks' => [
                 'discount-card' => []
             ]
@@ -47,7 +47,7 @@ class FactoryTest extends TestCase
 
     public function testThrowExceptionIfDriverNotFound()
     {
-        $factory = new DriverFactory([
+        $factory = new DriverCreator([
             'tasks' => [
                 'discount-card' => [
                     'driver' => 'baddriver',
@@ -60,7 +60,7 @@ class FactoryTest extends TestCase
 
     public function testCreatePreregisteredDriver()
     {
-        $factory = new DriverFactory([
+        $factory = new DriverCreator([
             'driver_options' => [
                 'soap' => [
                     'connection' => [],
@@ -79,7 +79,7 @@ class FactoryTest extends TestCase
 
     public function testCreateCustomDriver()
     {
-        $factory = new DriverFactory([
+        $factory = new DriverCreator([
             'drivers' => [
                 'dummy' => DriverDummy::class
             ],
@@ -96,7 +96,7 @@ class FactoryTest extends TestCase
 
     public function testCreateCustomDriverThroughContainer()
     {
-        $factory = new DriverFactory([
+        $factory = new DriverCreator([
             'drivers' => [
                 'dummy' => DriverDummy::class
             ],

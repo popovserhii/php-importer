@@ -2,16 +2,16 @@
 /**
  * Importer Soap Factory
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 06.04.2017 20:50
  */
-namespace Agere\Importer\Driver\Factory;
+namespace Popov\Importer\Driver\Factory;
 
 use Interop\Container\ContainerInterface;
-use Agere\Importer\Driver\Adapter\SoapCombinedAdapter;
-use Agere\Importer\Driver\Soap;
+use Popov\Importer\Driver\Adapter\SoapCombinedAdapter;
+use Popov\Importer\Driver\Soap;
 
 class SoapFactory
 {

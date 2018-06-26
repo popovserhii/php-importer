@@ -2,17 +2,17 @@
 /**
  * Soap client driver
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 13.05.2016 13:35
  * @link https://github.com/iliaal/php_excel
  */
-namespace Agere\Importer\Driver;
+namespace Popov\Importer\Driver;
 
-use Agere\Importer\Driver\Factory\SoapCombinedAdapterFactory;
+use Popov\Importer\Driver\Factory\SoapCombinedAdapterFactory;
 use Zend\Soap\Client as SoapClient;
-use Agere\Importer\Driver\Adapter\SoapCombinedAdapter;
+use Popov\Importer\Driver\Adapter\SoapCombinedAdapter;
 
 class Soap implements DriverInterface
 {
@@ -164,8 +164,13 @@ class Soap implements DriverInterface
     /**
      * {@inheritDoc}
      */
-    public function read($row, $column)
+    public function read($row, $column = null)
     {
+        if (!$column) {
+            return $this->sheet()[$row];
+        }
+
+        // skip header and convert column index to column name
         if ($row !== $this->firstRow()) {
             $column = $this->columns()[$column];
         }
@@ -177,7 +182,7 @@ class Soap implements DriverInterface
     /**
      * {@inheritDoc}
      */
-    public function config()
+    public function &config()
     {
         return $this->config;
     }

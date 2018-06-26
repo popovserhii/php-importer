@@ -2,12 +2,12 @@
 /**
  * Filter float number
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 27.04.2016 20:08
  */
-namespace Agere\Importer\Helper;
+namespace Popov\Importer\Helper;
 
 class FilterFloat implements FilterInterface {
 

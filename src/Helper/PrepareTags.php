@@ -2,14 +2,14 @@
 /**
  * Temporary import service
  *
- * @category Agere
- * @package Agere_Spare
+ * @category Popov
+ * @package Popov_Spare
  * @author Vlad Kozak <vk@agere.com.ua>
  * @datetime: 20.03.2016 01:26
  */
-namespace Agere\Spare\Service\Import\Helper;
+namespace Popov\Spare\Service\Import\Helper;
 
-use Agere\Importer\Importer;
+use Popov\Importer\Importer;
 
 class PrepareTags {
 

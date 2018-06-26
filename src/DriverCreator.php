@@ -2,18 +2,18 @@
 /**
  * Driver Factory
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 19.12.15 17:44
  */
-namespace Agere\Importer;
+namespace Popov\Importer;
 
-use Interop\Container\ContainerInterface;
+use Psr\Container\ContainerInterface;
 use Zend\Stdlib\Exception;
-use Agere\Importer\Driver;
+use Popov\Importer\Driver;
 
-class DriverFactory
+class DriverCreator
 {
     /** @var ContainerInterface */
     protected $container;
@@ -30,6 +30,8 @@ class DriverFactory
 
     public function __construct(array $config, ContainerInterface $container = null)
     {
+        $config = isset($config['importer']) ? $config['importer'] : $config;
+
         $config['drivers'] = array_merge($this->drivers, (isset($config['drivers']) ? $config['drivers']: []));
         $config['tasks'] = isset($config['tasks']) ? $config['tasks'] : [];
         // standardizes config key
@@ -61,7 +63,9 @@ class DriverFactory
             throw new Exception\RuntimeException('Driver key must be set in the configuration array');
         }
 
-        $driverKey = strtolower($config['driver']);
+        // developer should control driver naming personally
+        //$driverKey = strtolower($config['driver']);
+        $driverKey = $config['driver'];
         if (isset($this->config['drivers'][$driverKey])) {
             $driverClass = $this->config['drivers'][$driverKey];
         } else {
@@ -69,7 +73,8 @@ class DriverFactory
         }
 
         $config += isset($this->config['driver_options'][$driverKey]) ? $this->config['driver_options'][$driverKey] : [];
-        $driver = $this->createDriver($driverClass, $config);
+        $driver = $this->createDriver($driverClass)
+            ->config($config);
 
         return $driver;
     }
@@ -81,11 +86,11 @@ class DriverFactory
      * @param array $config
      * @return Driver\DriverInterface
      */
-    protected function createDriver($driverClass, array $config): Driver\DriverInterface
+    protected function createDriver($driverClass): Driver\DriverInterface
     {
         return isset($this->container)
-            ? $this->container->get($driverClass, $config)
-            : new $driverClass($config);
+            ? $this->container->get($driverClass)
+            : new $driverClass();
     }
 
     /**

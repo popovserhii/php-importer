@@ -2,12 +2,12 @@
 /**
  * Filter percent value (3%, 0.03) to integer value
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 01.06.2016 13:34
  */
-namespace Agere\Importer\Helper;
+namespace Popov\Importer\Helper;
 
 class FilterPercentToInt implements FilterInterface {
 

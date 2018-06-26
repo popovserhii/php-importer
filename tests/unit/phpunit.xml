@@ -2,7 +2,7 @@
 
 <phpunit bootstrap="Bootstrap.php" colors="true">
 	<testsuites>
-		<testsuite name="AgereTest/Importer">
+		<testsuite name="PopovTest/Importer">
 			<directory>./</directory>
 		</testsuite>
 	</testsuites>

@@ -2,12 +2,12 @@
 /**
  * Filter Interface
  *
- * @category Agere
- * @package Agere_Importer
+ * @category Popov
+ * @package Popov_Importer
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 13.05.2016 13:38
  */
-namespace Agere\Importer\Helper;
+namespace Popov\Importer\Helper;
 
 interface FilterInterface
 {

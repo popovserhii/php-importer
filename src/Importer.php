@@ -2,23 +2,31 @@
 /**
  * Import service
  *
- * @category Agere
- * @package Agere_Spare
+ * @category Popov
+ * @package Popov_Spare
  * @author Popov Sergiy <popov@agere.com.ua>
  * @datetime: 16.12.2015 17:36
  */
-namespace Agere\Importer;
+namespace Popov\Importer;
 
 use Zend\Stdlib\Exception;
-use Agere\Importer\Driver\DriverInterface;
-use Agere\Db\Db;
+use Popov\Importer\Driver\DriverInterface;
+use Popov\Db\Db;
 
 class Importer
 {
-    /** @var DriverFactory */
-    protected $driverFactory;
+    const MODE_SAVE = 'save';
 
-    /** @var Db */
+    const MODE_UPDATE = 'update';
+
+    /**
+     * @var DriverCreator
+     */
+    protected $driverCreator;
+
+    /**
+     * @var Db
+     */
     protected $db;
 
     /**
@@ -26,11 +34,9 @@ class Importer
      *
      * @var string
      */
-    protected $processingTable;
+    //protected $processingTable;
 
     protected $fieldsMap = [];
-
-    protected $errors = [];
 
     protected $tableOrders;
 
@@ -38,7 +44,10 @@ class Importer
 
     protected $saved = [];
 
-    /** Messages of import process. Can be "info", "error", "success" */
+    /**
+     * Messages of import process.
+     * Can be "info", "error", "success"
+     */
     protected $messages = [];
 
     protected $timeExecution;
@@ -54,25 +63,22 @@ class Importer
         'prepare' => [],
     ];
 
-    public function __construct(DriverFactory $driverFactory, Db $db)
+    public function __construct(DriverCreator $driverCreator, Db $db)
     {
-        $this->driverFactory = $driverFactory;
+        $this->driverCreator = $driverCreator;
         $this->db = $db;
     }
 
-    public function import($task, $filename)
+    public function import($task, $source)
     {
-        $driver = $this->getDriver($task, $filename);
+        $driver = $this->getDriver($task, $source);
         $this->profiling();
 		$this->fieldsMap = $this->fieldsMap ?: $driver->config()['fields_map'];
 
-		
         $tables = [];
         for ($col = $driver->firstColumn(); $col < $driver->lastColumn(); $col++) {
             $title = $driver->read($driver->firstRow(), $col);
             foreach ($this->fieldsMap as $i => $table) {
-				//\Zend\Debug\Debug::dump($table, '$table');
-				//\Zend\Debug\Debug::dump(isset($table[$title]), 'isset($table[' . $title . '])');
                 if (isset($table[$title])) {
                     $tables[$this->getTableOrder($table['__table'])][] = ['index' => $col, 'name' => $title];
                 } elseif (isset($table['__dynamic'])) {
@@ -91,9 +97,7 @@ class Importer
         }
         ksort($tables);
 		
-		//\Zend\Debug\Debug::dump($tables); die(__METHOD__.__LINE__);
         // skip head row
-        /** @link http://www.libxl.com/spreadsheet.html#lastRow */
         for ($row = ($driver->firstRow() + 1); $row < $driver->lastRow(); $row++) {
             $this->preparedFields = [];
             foreach ($tables as $tableOrder => $table) {
@@ -115,7 +119,7 @@ class Importer
                 if (!$item) {
                     continue;
                 }
-				//\Zend\Debug\Debug::dump($item); die(__METHOD__.__LINE__);
+
                 // save row
                 if (!isset($fields['__exclude']) || !$fields['__exclude']) {
                     if (isset($fields['__foreign'])) {
@@ -145,9 +149,7 @@ class Importer
         }
         $id = $this->getIds($row, $table); // important place here
         try {
-            $options = $this->getTableOptions($table);
-            $mode = isset($options['mode']) ? $options['mode'] : 'save';
-            $modeMethod = method_exists($this, $method = $mode . 'Mode') ? $method : 'saveMode';
+            $modeMethod = $this->getModeMethod($table);
             $this->{$modeMethod}($row, $table);
         } catch (\Exception $e) {
             $this->messages['error'][] = $e->getMessage();
@@ -169,9 +171,17 @@ class Importer
         return $id;
     }
 
+    protected function getModeMethod($table)
+    {
+        $options = $this->getTableOptions($table);
+        $mode = isset($options['mode']) ? $options['mode'] : self::MODE_SAVE;
+        $modeMethod = method_exists($this, $method = $mode . 'Mode') ? $method : self::MODE_SAVE . 'Mode';
+
+        return $modeMethod;
+    }
+
     protected function saveMode(array $row, $table)
     {
-        //\Zend\Debug\Debug::dump([$row, $table]); die(__METHOD__);
         $isDeep = $this->isDeep($row);
         $db = $this->getDb();
         if ($isDeep) {
@@ -201,85 +211,139 @@ class Importer
         $identifierField = ($identifierField = $this->getTableFieldsMap($table, '__identifier'))
             ? $identifierField
             : $identifierCustom;
+
         if (!$identifierField) {
             return false;
         }
-        $isDeep = $this->isDeep($row);
-        $identifiers = [];
-        if ($isDeep) {
-            foreach ($row as $sub) {
-                $identifiers[] = $sub[$identifierField];
-            }
-        } else {
-            $identifiers = [$row[$identifierField]];
+
+        // Identifier can be singular (id) or combined (code, country).
+        // Here we reduce all values to array.
+        $identifierField = is_array($identifierField) ? $identifierField : [$identifierField];
+
+        $identifiers = $this->prepareIdentifiers($row, $identifierField);
+
+        $sqlPart = [];
+        foreach ($identifiers as $field => $identifier) {
+            $sqlPart['column'][] = sprintf('`%s`', $field);
+            $sqlPart['where'][] = sprintf('%s IN (%s)', $field, str_repeat('?,', count($identifier) - 1) . '?');
         }
 
-        $sql = sprintf('SELECT `id`, `%s` FROM `%s` WHERE `%s` IN (%s)',
-            $identifierField,
+        $sql = sprintf('SELECT `id`, %s FROM `%s` WHERE %s',
+            implode(', ', $sqlPart['column']),
             $table,
-            $identifierField,
-            rtrim(str_repeat('?,', count($identifiers)), ',')
+            implode(' AND ', $sqlPart['where'])
         );
 
-        $pdo = $this->getPdo();
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($identifiers);
-        $ids = $stmt->fetchAll();
-        if ($apply) {
-            $findId = function ($row) use ($ids, $identifierField) {
-                foreach ($ids as $id) {
-                    // Foton = FOTON
-                    if (mb_strtolower($id[$identifierField]) === mb_strtolower($row[$identifierField])) {
-                        return $id['id'];
-                    }
-                }
+        $realRow = $this->db->fetchAll($sql, $this->flatten($identifiers));
 
-                return 0;
-            };
-            if ($isDeep) {
-                foreach ($row as $i => & $r) {
-                    $r['id'] = $findId($r);
-                }
-            } else {
-                $row['id'] = $findId($row);
-            }
+        if ($apply) {
+            $this->applyId($row, $realRow, $identifierField);
         }
+
         $ids = array_map(function ($id) {
             return $id['id'];
-        }, $ids);
+        }, $realRow);
 
         return $ids;
     }
 
-    protected function prepareField($cellValue, $params, & $row)
+    protected function prepareIdentifiers($row, $identifierField)
     {
-        $cellValue = trim($cellValue);
+        $isDeep = $this->isDeep($row);
+        $identifiers = [];
+        foreach ($identifierField as $field) {
+            if ($isDeep) {
+                foreach ($row as $sub) {
+                    $identifiers[$field][] = $sub[$field];
+                }
+            } else {
+                $identifiers[$field] = [$row[$field]];
+            }
+        }
+
+        return $identifiers;
+    }
+
+    protected function flatten($array = null)
+    {
+        $result = [];
+        if (!is_array($array)) {
+            $array = func_get_args();
+        }
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                $result = array_merge($result, $this->flatten($value));
+            } else {
+                $result = array_merge($result, [$key => $value]);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Apply inner DB id to row
+     *
+     * @param $row
+     * @param $ids
+     * @param $identifierField
+     */
+    protected function applyId(& $row, $ids, $identifierField)
+    {
+        $findId = function ($row) use ($ids, $identifierField) {
+            foreach ($ids as $id) {
+                // Foton == FOTON
+                $bool = true;
+                foreach ($identifierField as $identifier) {
+                    $bool = $bool && (mb_strtolower($id[$identifier]) === mb_strtolower($row[$identifier]));
+                }
+                if ($bool) {
+                    return $id['id'];
+                }
+            }
+            return 0;
+        };
+
+        $isDeep = $this->isDeep($row);
+
+        if ($isDeep) {
+            foreach ($row as $i => & $r) {
+                $r['id'] = $findId($r);
+            }
+        } else {
+            $row['id'] = $findId($row);
+        }
+    }
+
+    protected function prepareField($value, $params, & $row)
+    {
+        $value = trim($value);
         // filter field
         if (isset($params['__filter'])) {
             foreach ($params['__filter'] as $filter) {
-                $cellValue = $this->getHelper($filter, 'filter')->filter($cellValue);
+                $value = $this->getHelper($filter, 'filter')->filter($value);
             }
         }
 		
         // prepared filed
         if (isset($params['__prepare'])) {
             foreach ($params['__prepare'] as $prepare) {
-                $cellValue = $this->getHelper($prepare, 'prepare')->prepare($cellValue);
+                $value = $this->getHelper($prepare, 'prepare')->prepare($value);
             }
         }
 		
         if (is_string($params)) { 
 			// if field not has any preparations
-            $row[$params] = ($cellValue !== null) ? $cellValue : '';
-		} elseif (isset($params['name']) && is_array($cellValue)) {
+            $row[$params] = ($value !== null) ? $value : '';
+		} elseif (isset($params['name']) && is_array($value)) {
 			// if field contains values for different fields of one table
-			$row = array_merge($row, $cellValue);
+			$row = array_merge($row, $value);
         } elseif (isset($params['name'])) {
 			// if field has preparation
-            $row[$params['name']] = ($cellValue !== null) ? $cellValue : '';
+            $row[$params['name']] = ($value !== null) ? $value : '';
         } else {
 			// if field contains values for multi-dimensional save
-            $row = $cellValue;
+            $row = $value;
         }
 
         return $row;
@@ -294,7 +358,7 @@ class Importer
             return $helpers[$key];
         }
 
-        $config = $this->getDriverFactory()->getConfig();
+        $config = $this->getDriverCreator()->getConfig();
         if (isset($this->helpers[$pool][$name])) {
             $helperClass = $this->helpers[$pool][$name];
         } elseif (isset($config['helpers'][$pool][$name])) {
@@ -306,9 +370,9 @@ class Importer
         return $helpers[$key] = new $helperClass($this);
     }
 
-    public function getDriverFactory()
+    public function getDriverCreator()
     {
-        return $this->driverFactory;
+        return $this->driverCreator;
     }
 
     /**
@@ -319,7 +383,7 @@ class Importer
      * @return DriverInterface
      */
     public function getDriver($configTask, $source) {
-        $driverFactory = $this->getDriverFactory();
+        $driverFactory = $this->getDriverCreator();
         /** @var DriverInterface $driver */
         $driver = $driverFactory->create($configTask);
         $driver->source($source);

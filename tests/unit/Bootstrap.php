@@ -1,5 +1,5 @@
 <?php
-namespace AgereTest\Importer;
+namespace PopovTest\Importer;
 
 /**
  * Test bootstrap, for setting up autoloading
