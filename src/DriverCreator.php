@@ -1,12 +1,18 @@
 <?php
 /**
- * Driver Factory
+ * The MIT License (MIT)
+ * Copyright (c) 2018 Serhii Popov
+ * This source file is subject to The MIT License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * https://opensource.org/licenses/MIT
  *
  * @category Popov
  * @package Popov_Importer
- * @author Popov Sergiy <popov@agere.com.ua>
- * @datetime: 19.12.15 17:44
+ * @author Serhii Popov <popow.serhii@gmail.com>
+ * @license https://opensource.org/licenses/MIT The MIT License (MIT)
  */
+
 namespace Popov\Importer;
 
 use Psr\Container\ContainerInterface;
@@ -28,9 +34,15 @@ class DriverCreator
         'soap' => Driver\Soap::class,
     ];
 
-    public function __construct(array $config, ContainerInterface $container = null)
+    public function __construct(ContainerInterface $container = null, array $config = null)
     {
-        $config = isset($config['importer']) ? $config['importer'] : $config;
+        $this->setConfig($config);
+        $this->container = $container;
+    }
+
+    public function setConfig($config)
+    {
+        //$config = isset($config['importer']) ? $config['importer'] : $config;
 
         $config['drivers'] = array_merge($this->drivers, (isset($config['drivers']) ? $config['drivers']: []));
         $config['tasks'] = isset($config['tasks']) ? $config['tasks'] : [];
@@ -39,9 +51,9 @@ class DriverCreator
             unset($config['tasks'][$key]);
             $config['tasks'][$this->getConfigKey($key)] = $value;
         }
-
-        $this->container = $container;
         $this->config = $config;
+
+        return $this;
     }
 
     public function getConfig()

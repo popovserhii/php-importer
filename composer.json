@@ -6,19 +6,23 @@
   "keywords": [
     "importer",
     "csv",
-    "excel"
+    "excel",
+    "parser",
+    "adapter"
   ],
   "authors": [
     {
-      "name": "Sergiy Popov",
-      "email": "popow.sergiy@gmail.com",
-      "homepage": "http://agere.com.ua/",
+      "name": "Serhii Popov",
+      "email": "popow.serhii@gmail.com",
+      "homepage": "http://stagem.com.ua/",
       "role": "Developer"
     }
   ],
   "require": {
     "php": "^5.6||^7.0",
-    "popov/db": "dev-master"
+    "popov/db": "dev-master",
+    "popov/variably": "dev-master"
+
   },
   "autoload": {
     "psr-4": {

@@ -11,6 +11,7 @@ namespace Popov\Importer;
 
 use Zend\Stdlib\Exception;
 use Popov\Importer\Driver\DriverInterface;
+use Popov\Variably\ConfigHandler;
 use Popov\Db\Db;
 
 class Importer
@@ -25,20 +26,25 @@ class Importer
     protected $driverCreator;
 
     /**
+     * @var ConfigHandler
+     */
+    protected $configHandler;
+
+    /**
      * @var Db
      */
     protected $db;
 
     /**
-     * Table fields which is now in preparation
-     *
-     * @var string
+     * @var array
      */
-    //protected $processingTable;
+    protected $config;
 
     protected $fieldsMap = [];
 
     protected $tableOrders;
+
+    protected $fieldOrders;
 
     protected $codenamedOrders;
 
@@ -54,33 +60,41 @@ class Importer
 
     protected $preparedFields = [];
 
-    protected $helpers = [
-        'filter' => [
-            'int' => Helper\FilterInt::class,
-            'float' => Helper\FilterFloat::class,
-            'percentToInt' => Helper\FilterPercentToInt::class,
-        ],
-        'prepare' => [],
-    ];
-
-    public function __construct(DriverCreator $driverCreator, Db $db)
+    public function __construct(
+        Db $db,
+        ConfigHandler $configHandler,
+        DriverCreator $driverCreator = null,
+        //HelperCreator $helperCreator = null
+        array $config = null
+    )
     {
-        $this->driverCreator = $driverCreator;
         $this->db = $db;
+        $this->configHandler = $configHandler;
+        $this->driverCreator = $driverCreator ?? new DriverCreator([]);
+        //$this->helperCreator = $helperCreator ?? new HelperCreator([]);
+
+        $this->driverCreator->setConfig($config['importer']);
+        $this->configHandler->setConfig($config['importer'])
+            ->getVariably()->set('importer', $this);
+
+        $this->config = $config;
     }
 
     public function import($task, $source)
     {
         $driver = $this->getDriver($task, $source);
         $this->profiling();
-		$this->fieldsMap = $this->fieldsMap ?: $driver->config()['fields_map'];
+		$this->fieldsMap = $this->fieldsMap ?: $driver->config()['fields'];
 
         $tables = [];
         for ($col = $driver->firstColumn(); $col < $driver->lastColumn(); $col++) {
+            $tableOrder = null;
             $title = $driver->read($driver->firstRow(), $col);
-            foreach ($this->fieldsMap as $i => $table) {
+            foreach ($this->fieldsMap as $table) {
                 if (isset($table[$title])) {
-                    $tables[$this->getTableOrder($table['__table'])][] = ['index' => $col, 'name' => $title];
+                    $tableOrder = $this->getTableOrder($table['__table']);
+                    $fieldOrder = $this->getFieldOrder($title);
+                    $tables[$tableOrder][$fieldOrder] = ['index' => $col, 'name' => $title];
                 } elseif (isset($table['__dynamic'])) {
                     if (!isset($indexStartAfter)
                         && isset($table['__options']['startAfter'])
@@ -94,9 +108,13 @@ class Importer
                     }
                 }
             }
+            if (isset($tables[$tableOrder])) {
+                ksort($tables[$tableOrder]);
+            }
         }
         ksort($tables);
 		
+        
         // skip head row
         for ($row = ($driver->firstRow() + 1); $row < $driver->lastRow(); $row++) {
             $this->preparedFields = [];
@@ -125,6 +143,11 @@ class Importer
                     if (isset($fields['__foreign'])) {
                         foreach ($fields['__foreign'] as $referenceTable => $foreignField) {
                             $item[$foreignField] = $this->saved[$referenceTable];
+                        }
+                    }
+                    if (isset($fields['__ignore'])) {
+                        foreach ($fields['__ignore'] as $ignoredField) {
+                            unset($item[$ignoredField]);
                         }
                     }
                     $this->saved[$tableName] = $this->save($item, $tableName);
@@ -208,9 +231,28 @@ class Importer
 
     public function getIds(array & $row, $table, $apply = true, $identifierCustom = false)
     {
-        $identifierField = ($identifierField = $this->getTableFieldsMap($table, '__identifier'))
-            ? $identifierField
-            : $identifierCustom;
+        $identifierField = $this->getIdentifierField($table, $identifierCustom);
+
+        if (!$identifierField) {
+            return false;
+        }
+
+        $realRow = $this->getRealRow($row, $table);
+
+        if ($apply) {
+            $this->applyId($row, $realRow, $identifierField);
+        }
+
+        $ids = array_map(function ($id) {
+            return $id['id'];
+        }, $realRow);
+
+        return $ids;
+    }
+
+    public function getRealRow(array $row, $table)
+    {
+        $identifierField = $this->getIdentifierField($table);
 
         if (!$identifierField) {
             return false;
@@ -224,27 +266,29 @@ class Importer
 
         $sqlPart = [];
         foreach ($identifiers as $field => $identifier) {
-            $sqlPart['column'][] = sprintf('`%s`', $field);
+            //$sqlPart['column'][] = sprintf('`%s`', $field);
             $sqlPart['where'][] = sprintf('%s IN (%s)', $field, str_repeat('?,', count($identifier) - 1) . '?');
         }
 
-        $sql = sprintf('SELECT `id`, %s FROM `%s` WHERE %s',
-            implode(', ', $sqlPart['column']),
+        //$sql = sprintf('SELECT `id`, %s FROM `%s` WHERE %s',
+        $sql = sprintf('SELECT * FROM `%s` WHERE %s',
+            //implode(', ', $sqlPart['column']),
             $table,
             implode(' AND ', $sqlPart['where'])
         );
 
         $realRow = $this->db->fetchAll($sql, $this->flatten($identifiers));
 
-        if ($apply) {
-            $this->applyId($row, $realRow, $identifierField);
-        }
+        return $realRow;
+    }
 
-        $ids = array_map(function ($id) {
-            return $id['id'];
-        }, $realRow);
+    protected function getIdentifierField($table, $identifierCustom = false)
+    {
+        $identifierField = ($identifierField = $this->getTableFieldsMap($table, '__identifier'))
+            ? $identifierField
+            : $identifierCustom;
 
-        return $ids;
+        return $identifierField;
     }
 
     protected function prepareIdentifiers($row, $identifierField)
@@ -317,22 +361,10 @@ class Importer
 
     protected function prepareField($value, $params, & $row)
     {
-        $value = trim($value);
-        // filter field
-        if (isset($params['__filter'])) {
-            foreach ($params['__filter'] as $filter) {
-                $value = $this->getHelper($filter, 'filter')->filter($value);
-            }
-        }
-		
-        // prepared filed
-        if (isset($params['__prepare'])) {
-            foreach ($params['__prepare'] as $prepare) {
-                $value = $this->getHelper($prepare, 'prepare')->prepare($value);
-            }
-        }
-		
-        if (is_string($params)) { 
+        $this->configHandler->getVariably()->set('fields', $row);
+        $value = $this->configHandler->process($value, $params);
+
+        if (is_string($params)) {
 			// if field not has any preparations
             $row[$params] = ($value !== null) ? $value : '';
 		} elseif (isset($params['name']) && is_array($value)) {
@@ -347,27 +379,6 @@ class Importer
         }
 
         return $row;
-    }
-
-    public function getHelper($name, $pool)
-    {
-        static $helpers = [];
-
-        $key = $pool . $name;
-        if (isset($helpers[$key])) {
-            return $helpers[$key];
-        }
-
-        $config = $this->getDriverCreator()->getConfig();
-        if (isset($this->helpers[$pool][$name])) {
-            $helperClass = $this->helpers[$pool][$name];
-        } elseif (isset($config['helpers'][$pool][$name])) {
-            $helperClass = $config['helpers'][$pool][$name];
-        } else {
-            throw new Exception\RuntimeException(sprintf('Import helper [%s:%s] not exists', $pool, $name));
-        }
-
-        return $helpers[$key] = new $helperClass($this);
     }
 
     public function getDriverCreator()
@@ -439,6 +450,15 @@ class Importer
         return $this;
     }
 
+    public function getFieldOrder($filedName)
+    {
+        if (is_null($this->fieldOrders)) {
+            $this->prepareOrders();
+        }
+
+        return isset($this->fieldOrders[$filedName]) ? $this->fieldOrders[$filedName] : false;
+    }
+
     public function getTableOrder($tableName)
     {
         if (is_null($this->tableOrders)) {
@@ -450,6 +470,7 @@ class Importer
 
     protected function prepareOrders()
     {
+        $this->fieldOrders = [];
         $this->tableOrders = [];
         $this->codenamedOrders = [];
         foreach ($this->fieldsMap as $i => $fields) {
@@ -458,6 +479,15 @@ class Importer
             }
             $this->tableOrders[$fields['__table']] = $i;
             $this->codenamedOrders[$fields['__codename']] = $i;
+
+            $f = 0;
+            foreach ($fields as $fromName => $toName) {
+                // skip reserved config keys
+                if ('__' === substr($fromName, 0, 2)) {
+                    continue;
+                }
+                $this->fieldOrders[$fromName] = $f++;
+            }
         }
     }
 
