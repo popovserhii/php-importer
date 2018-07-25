@@ -54,7 +54,7 @@ interface DriverInterface
      *
      * @param int $row
      * @param int $column If a column isn't passed than entire row will be returned
-     * @return mixed
+     * @return mixed Return value of cell or false if cell not found
      */
     public function read($row, $column = null);
 

@@ -132,6 +132,16 @@ Fields which should be ignored in save operation. These fields can be used in da
 '__exclude' => false,
 ```             
 *Bool*. Exclude table from save operation. All fields can be used in data filtration. 
+                    
+**__exclude**       
+```php
+'__foreign' => ['customer_table' => 'customerId'],
+
+```
+This option is actual if set up minimum two group of fields in config.
+For example, if you have customer and review info, you put customer info in first group of fields 
+and review info in second group of fields. When first group will be saved the ID will be marked in memory and second group
+can use this value.   
 
 ### Options
 **mode**

@@ -125,12 +125,13 @@ class Importer
                 $item = [];
                 foreach ($table as $column) {
                     $field = $fields[$column['name']];
+                    if (false === ($value = $driver->read($row, $column['index']))) {
+                        // wrong value address has been skipped
+                        continue;
+                    }
+
                     // prepare row for save
-                    $this->prepareField(
-                        $driver->read($row, $column['index']),
-                        $field,
-                        $item
-                    );
+                    $this->prepareField($value, $field, $item);
                     $this->preparedFields[$tableName] = $item;
                 }
 
@@ -142,7 +143,9 @@ class Importer
                 if (!isset($fields['__exclude']) || !$fields['__exclude']) {
                     if (isset($fields['__foreign'])) {
                         foreach ($fields['__foreign'] as $referenceTable => $foreignField) {
-                            $item[$foreignField] = $this->saved[$referenceTable];
+                            if (isset($this->saved[$referenceTable])) {
+                                $item[$foreignField] = $this->saved[$referenceTable];
+                            }
                         }
                     }
                     if (isset($fields['__ignore'])) {
@@ -338,6 +341,7 @@ class Importer
             foreach ($ids as $id) {
                 // Foton == FOTON
                 $bool = true;
+                $identifierField = $this->flatten($identifierField);
                 foreach ($identifierField as $identifier) {
                     $bool = $bool && (mb_strtolower($id[$identifier]) === mb_strtolower($row[$identifier]));
                 }
