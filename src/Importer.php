@@ -126,7 +126,7 @@ class Importer
                 foreach ($table as $column) {
                     $field = $fields[$column['name']];
                     if (false === ($value = $driver->read($row, $column['index']))) {
-                        // wrong value address has been skipped
+                        // Skip wrong value address
                         continue;
                     }
 
