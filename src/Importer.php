@@ -93,7 +93,7 @@ class Importer
             foreach ($this->fieldsMap as $table) {
                 if (isset($table[$title])) {
                     $tableOrder = $this->getTableOrder($table['__table']);
-                    $fieldOrder = $this->getFieldOrder($title);
+                    $fieldOrder = $this->getFieldOrder($title, $table['__table']);
                     $tables[$tableOrder][$fieldOrder] = ['index' => $col, 'name' => $title];
                 } elseif (isset($table['__dynamic'])) {
                     if (!isset($indexStartAfter)
@@ -454,13 +454,14 @@ class Importer
         return $this;
     }
 
-    public function getFieldOrder($filedName)
+    public function getFieldOrder($filedName, $table)
     {
         if (is_null($this->fieldOrders)) {
             $this->prepareOrders();
         }
 
-        return isset($this->fieldOrders[$filedName]) ? $this->fieldOrders[$filedName] : false;
+        #$tableOrder = $this->getTableOrder($table);
+        return isset($this->fieldOrders[$table][$filedName]) ? $this->fieldOrders[$table][$filedName] : false;
     }
 
     public function getTableOrder($tableName)
@@ -490,7 +491,7 @@ class Importer
                 if ('__' === substr($fromName, 0, 2)) {
                     continue;
                 }
-                $this->fieldOrders[$fromName] = $f++;
+                $this->fieldOrders[$fields['__table']][$fromName] = $f++;
             }
         }
     }
