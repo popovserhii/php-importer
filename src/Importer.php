@@ -177,22 +177,22 @@ class Importer
         try {
             $modeMethod = $this->getModeMethod($table);
             $this->{$modeMethod}($row, $table);
+
+            $isDeep = $this->isDeep($row);
+            $isDeepCond = $isDeep && (count($id) !== count($row));
+            // Double check if we have multiple array. We don't know which data will be inserted or updated
+            if ($isDeepCond) {
+                $id = $this->getIds($row, $table, false);
+            } else {
+                $db = $this->getDb();
+                $id = $id ?: [$db->lastInsertId()];
+            }
+            $id = (!isset($id[1]))
+                ? ($id ? current($id) : false) // if __identifier set to false then return false
+                : $id;
         } catch (\Exception $e) {
             $this->messages['error'][] = $e->getMessage();
         }
-
-        $isDeep = $this->isDeep($row);
-        $isDeepCond = $isDeep && (count($id) !== count($row));
-        // Double check if we have multiple array. We don't know which data will be inserted or updated
-        if ($isDeepCond) {
-            $id = $this->getIds($row, $table, false);
-        } else {
-            $db = $this->getDb();
-            $id = $id ?: [$db->lastInsertId()];
-        }
-        $id = (!isset($id[1]))
-            ? ($id ? current($id) : false) // if __identifier set to false then return false
-            : $id;
 
         return $id;
     }
