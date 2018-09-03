@@ -4,7 +4,7 @@
  *
  * @category Popov
  * @package Popov_Importer
- * @author Popov Sergiy <popov@agere.com.ua>
+ * @author Serhii Popov <popow.serhii@gmail.com>
  * @datetime: 06.04.2017 19:20
  */
 namespace Popov\Importer\Driver\Factory;

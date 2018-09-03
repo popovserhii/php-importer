@@ -29,9 +29,10 @@ class DriverCreator
 
     /** @var array */
     protected $drivers = [
-        'libxl' => Driver\LibXl::class,
-        'csv' => Driver\Csv::class,
-        'soap' => Driver\Soap::class,
+        'Excel' => Driver\Excel::class,
+        'Libxl' => Driver\LibXl::class,
+        'Csv' => Driver\Csv::class,
+        'Soap' => Driver\Soap::class,
     ];
 
     public function __construct(ContainerInterface $container = null, array $config = null)

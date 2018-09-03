@@ -4,7 +4,7 @@
  *
  * @category Popov
  * @package Popov_Importer
- * @author Popov Sergiy <popov@agere.com.ua>
+ * @author Serhii Popov <popow.serhii@gmail.com>
  * @datetime: 13.05.2016 13:38
  */
 namespace Popov\Importer\Driver;
@@ -52,8 +52,8 @@ interface DriverInterface
     /**
      * Get data from a specific cell
      *
-     * @param int $row
-     * @param int $column If a column isn't passed than entire row will be returned
+     * @param int $row Row index
+     * @param int $column Column index. If a column isn't passed than entire row will be returned
      * @return mixed Return value of cell or false if cell not found
      */
     public function read($row, $column = null);
@@ -64,5 +64,5 @@ interface DriverInterface
      * @param array $config
      * @return mixed On set return self object on get return value set previously
      */
-    public function &config(array $config = null);
+    public function &config(array $config = []);
 }

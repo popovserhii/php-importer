@@ -4,7 +4,7 @@
  *
  * @category Popov
  * @package Popov_Spare
- * @author Popov Sergiy <popov@agere.com.ua>
+ * @author Serhii Popov <popow.serhii@gmail.com>
  * @datetime: 16.12.2015 17:36
  */
 namespace Popov\Importer;
@@ -12,6 +12,7 @@ namespace Popov\Importer;
 use Zend\Stdlib\Exception;
 use Popov\Importer\Driver\DriverInterface;
 use Popov\Variably\ConfigHandler;
+use Popov\Variably\Preprocessor;
 use Popov\Db\Db;
 
 class Importer
@@ -21,9 +22,14 @@ class Importer
     const MODE_UPDATE = 'update';
 
     /**
-     * @var DriverCreator
+     * @var Db
      */
-    protected $driverCreator;
+    protected $db;
+
+    /**
+     * @var Preprocessor
+     */
+    protected $preprocessor;
 
     /**
      * @var ConfigHandler
@@ -31,9 +37,9 @@ class Importer
     protected $configHandler;
 
     /**
-     * @var Db
+     * @var DriverCreator
      */
-    protected $db;
+    protected $driverCreator;
 
     /**
      * @var array
@@ -62,6 +68,7 @@ class Importer
 
     public function __construct(
         Db $db,
+        Preprocessor $preprocessor,
         ConfigHandler $configHandler,
         DriverCreator $driverCreator = null,
         //HelperCreator $helperCreator = null
@@ -69,7 +76,9 @@ class Importer
     )
     {
         $this->db = $db;
+        $this->preprocessor = $preprocessor;
         $this->configHandler = $configHandler;
+        #$this->configHandler = $preprocessor->getConfigHandler();
         $this->driverCreator = $driverCreator ?? new DriverCreator([]);
         //$this->helperCreator = $helperCreator ?? new HelperCreator([]);
 
@@ -131,7 +140,7 @@ class Importer
                     }
 
                     // prepare row for save
-                    $this->prepareField($value, $field, $item);
+                    $this->handleField($value, $field, $item);
                     $this->preparedFields[$tableName] = $item;
                 }
 
@@ -175,6 +184,10 @@ class Importer
         }
         $id = $this->getIds($row, $table); // important place here
         try {
+            // We run preprocessor handle directly before save for have access to $row ID.
+            // For example, save default values only if there is no ID in $row.
+            $row = $this->handlePreprocessor($row);
+
             $modeMethod = $this->getModeMethod($table);
             $this->{$modeMethod}($row, $table);
 
@@ -363,7 +376,7 @@ class Importer
         }
     }
 
-    protected function prepareField($value, $params, & $row)
+    protected function handleField($value, $params, & $row)
     {
         $this->configHandler->getVariably()->set('fields', $row);
         $value = $this->configHandler->process($value, $params);
@@ -385,6 +398,19 @@ class Importer
         return $row;
     }
 
+    protected function handlePreprocessor($row)
+    {
+        $fieldsConfig = $this->getCurrentFieldsMap();
+        if (isset($fieldsConfig['__preprocessor'])) {
+            $row = $this->preprocessor->setConfig($fieldsConfig['__preprocessor'])
+                ->process($row);
+        }
+
+        return $row;
+    }
+
+
+
     public function getDriverCreator()
     {
         return $this->driverCreator;
@@ -404,6 +430,16 @@ class Importer
         $driver->source($source);
 
         return $driver;
+    }
+
+    public function getCurrentFieldsMap()
+    {
+        end($this->preparedFields);
+        $currentTable = key($this->preparedFields);
+        $fieldsConfig = $this->getTableFieldsMap($currentTable);
+        reset($this->preparedFields);
+
+        return $fieldsConfig;
     }
 
     public function getTableFieldsMap($table, $field = false)
@@ -535,6 +571,10 @@ class Importer
      */
     protected function isDeep($array)
     {
+        if (!is_array($array)) {
+            return false;
+        }
+
         foreach ($array as $elm) {
             if (is_array($elm)) {
                 return true;

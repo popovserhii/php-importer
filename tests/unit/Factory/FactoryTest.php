@@ -4,7 +4,7 @@
  *
  * @category Popov
  * @package Popov_Importer
- * @author Popov Sergiy <popov@agere.com.ua>
+ * @author Serhii Popov <popow.serhii@gmail.com>
  * @datetime: 17.03.2017 16:54
  */
 namespace PopovTest\Importer\Factory;

@@ -4,7 +4,7 @@
  *
  * @category Popov
  * @package Popov_<package>
- * @author Popov Sergiy <popov@agere.com.ua>
+ * @author Serhii Popov <popow.serhii@gmail.com>
  * @datetime: 04.04.2017 19:55
  */
 namespace PopovTest\Importer\Fake;
