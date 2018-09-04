@@ -139,7 +139,6 @@ class Importer
                         continue;
                     }
 
-                    // prepare row for save
                     $this->handleField($value, $field, $item);
                     $this->preparedFields[$tableName] = $item;
                 }
@@ -378,20 +377,24 @@ class Importer
 
     protected function handleField($value, $params, & $row)
     {
-        $this->configHandler->getVariably()->set('fields', $row);
-        $value = $this->configHandler->process($value, $params);
+        try {
+            $this->configHandler->getVariably()->set('fields', $row);
+            $value = $this->configHandler->process($value, $params);
+        } catch (\Exception $e) {
+            $this->messages['error'][] = $e->getMessage();
+        }
 
         if (is_string($params)) {
-			// if field not has any preparations
+            // if field not has any preparations
             $row[$params] = ($value !== null) ? $value : '';
-		} elseif (isset($params['name']) && is_array($value)) {
-			// if field contains values for different fields of one table
-			$row = array_merge($row, $value);
+        } elseif (isset($params['name']) && is_array($value)) {
+            // if field contains values for different fields of one table
+            $row = array_merge($row, $value);
         } elseif (isset($params['name'])) {
-			// if field has preparation
+            // if field has preparation
             $row[$params['name']] = ($value !== null) ? $value : '';
         } else {
-			// if field contains values for multi-dimensional save
+            // if field contains values for multi-dimensional save
             $row = $value;
         }
 
