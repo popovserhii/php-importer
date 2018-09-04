@@ -42,6 +42,11 @@ class Importer
     protected $driverCreator;
 
     /**
+     * @var ObservableInterface
+     */
+    protected $observable;
+
+    /**
      * @var array
      */
     protected $config;
@@ -68,9 +73,10 @@ class Importer
 
     public function __construct(
         Db $db,
-        Preprocessor $preprocessor,
         ConfigHandler $configHandler,
+        Preprocessor $preprocessor = null,
         DriverCreator $driverCreator = null,
+        ObservableInterface $observable = null,
         //HelperCreator $helperCreator = null
         array $config = null
     )
@@ -80,7 +86,7 @@ class Importer
         $this->configHandler = $configHandler;
         #$this->configHandler = $preprocessor->getConfigHandler();
         $this->driverCreator = $driverCreator ?? new DriverCreator([]);
-        //$this->helperCreator = $helperCreator ?? new HelperCreator([]);
+        $this->observable = $observable;
 
         $this->driverCreator->setConfig($config['importer']);
         $this->configHandler->setConfig($config['importer'])
@@ -187,8 +193,13 @@ class Importer
             // For example, save default values only if there is no ID in $row.
             $row = $this->handlePreprocessor($row);
 
+            $this->trigger('save', $row);
+            $this->trigger('save.' . $this->getCurrentFieldsMap('__codename'), $row);
+
             $modeMethod = $this->getModeMethod($table);
             $this->{$modeMethod}($row, $table);
+
+            $this->trigger('save.post', $row);
 
             $isDeep = $this->isDeep($row);
             $isDeepCond = $isDeep && (count($id) !== count($row));
@@ -412,8 +423,6 @@ class Importer
         return $row;
     }
 
-
-
     public function getDriverCreator()
     {
         return $this->driverCreator;
@@ -435,14 +444,14 @@ class Importer
         return $driver;
     }
 
-    public function getCurrentFieldsMap()
+    public function getCurrentFieldsMap($field = false)
     {
         end($this->preparedFields);
         $currentTable = key($this->preparedFields);
-        $fieldsConfig = $this->getTableFieldsMap($currentTable);
+        $fieldsMap = $this->getTableFieldsMap($currentTable, $field);
         reset($this->preparedFields);
 
-        return $fieldsConfig;
+        return $fieldsMap;
     }
 
     public function getTableFieldsMap($table, $field = false)
@@ -660,5 +669,13 @@ class Importer
     public function getSaved($productTable)
     {
         return $this->saved[$productTable];
+    }
+
+    protected function trigger($eventName, $target, $params = [])
+    {
+        if ($this->observable) {
+            $params['context'] = $this;
+            $this->observable->trigger($eventName, $target, $params);
+        }
     }
 }
