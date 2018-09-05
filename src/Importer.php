@@ -62,6 +62,13 @@ class Importer
     protected $saved = [];
 
     /**
+     * Current real row from database
+     *
+     * @var array
+     */
+    protected $currentRealRow = [];
+
+    /**
      * Messages of import process.
      * Can be "info", "error", "success"
      */
@@ -130,9 +137,12 @@ class Importer
         ksort($tables);
 		
         
-        // skip head row
+        // Skip head row
         for ($row = ($driver->firstRow() + 1); $row < $driver->lastRow(); $row++) {
+            // Reset properties on each iteration
             $this->preparedFields = [];
+            $this->currentRealRow = [];
+
             foreach ($tables as $tableOrder => $table) {
                 $fields = $this->fieldsMap[$tableOrder];
                 $tableName = $fields['__table'];
@@ -189,6 +199,7 @@ class Importer
         }
         $id = $this->getIds($row, $table); // important place here
         try {
+
             // We run preprocessor handle directly before save for have access to $row ID.
             // For example, save default values only if there is no ID in $row.
             $row = $this->handlePreprocessor($row);
@@ -264,6 +275,7 @@ class Importer
         }
 
         $realRow = $this->getRealRow($row, $table);
+        //$realRow = $this->getCurrentRealRow($row, $table);
 
         if ($apply) {
             $this->applyId($row, $realRow, $identifierField);
@@ -304,6 +316,9 @@ class Importer
         );
 
         $realRow = $this->db->fetchAll($sql, $this->flatten($identifiers));
+
+        // $currentRealRow is reset on each iteration
+        $this->currentRealRow[$table] = $realRow;
 
         return $realRow;
     }
@@ -444,14 +459,53 @@ class Importer
         return $driver;
     }
 
-    public function getCurrentFieldsMap($field = false)
+    public function getCurrentTable()
     {
         end($this->preparedFields);
-        $currentTable = key($this->preparedFields);
-        $fieldsMap = $this->getTableFieldsMap($currentTable, $field);
+        $table = key($this->preparedFields);
         reset($this->preparedFields);
 
+        return $table;
+    }
+
+    public function getCurrentFieldsMap($field = false)
+    {
+        $currentTable = $this->getCurrentTable();
+        $fieldsMap = $this->getTableFieldsMap($currentTable, $field);
+
         return $fieldsMap;
+    }
+
+    /**
+     * Get prepared fields grouped by tables
+     *
+     * @return array
+     */
+    public function getPreparedFields()
+    {
+        return $this->preparedFields;
+    }
+
+    /**
+     * Get current real row saved in database.
+     *
+     * This method reduce number of queries to database.
+     * You should be sure identifier fields already processed and are available in $preparedFields.
+     *
+     * Trick: in __preprocessor all fields are available.
+     *
+     * @param string $table
+     * @return array
+     */
+    public function getCurrentRealRow($table = null)
+    {
+        $table = $table ?: $this->getCurrentTable();
+        if (!$this->currentRealRow[$table]) {
+            $fields = $this->getPreparedFields()[$table];
+            $this->currentRealRow[$table] = $this->getRealRow($fields, $table);
+        }
+
+        return $this->currentRealRow[$table];
     }
 
     public function getTableFieldsMap($table, $field = false)
@@ -633,11 +687,6 @@ class Importer
     public function getPdo()
     {
         return $this->db->getPdo();
-    }
-
-    public function getPreparedFields()
-    {
-        return $this->preparedFields;
     }
 
     public function setFieldsMap($orderTable, $options)
