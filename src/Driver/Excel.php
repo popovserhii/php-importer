@@ -81,7 +81,7 @@ class Excel implements DriverInterface
         $xlSheet = $this->xlSheet();
         $highestRow = $xlSheet->getHighestRow();
 
-        return $highestRow + 1;
+        return $highestRow;
     }
 
     /**
@@ -99,7 +99,7 @@ class Excel implements DriverInterface
                 $value[] = $xlSheet->getCellByColumnAndRow($col, $row)->getCalculatedValue();
             }
         } else {
-            $value = $xlSheet->getCellByColumnAndRow($column, $row)->getValue();
+            $value = $xlSheet->getCellByColumnAndRow($column, $row)->getCalculatedValue();
         }
 
         return $value;

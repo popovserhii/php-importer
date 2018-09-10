@@ -66,7 +66,7 @@ class Importer
      *
      * @var array
      */
-    protected $currentRealRow = [];
+    protected $currentRealRows = [];
 
     /**
      * Messages of import process.
@@ -109,7 +109,7 @@ class Importer
 		$this->fieldsMap = $this->fieldsMap ?: $driver->config()['fields'];
 
         $tables = [];
-        for ($col = $driver->firstColumn(); $col < $driver->lastColumn(); $col++) {
+        for ($col = $driver->firstColumn(); $col <= $driver->lastColumn(); $col++) {
             $tableOrder = null;
             $title = $driver->read($driver->firstRow(), $col);
             foreach ($this->fieldsMap as $table) {
@@ -138,10 +138,10 @@ class Importer
 		
         
         // Skip head row
-        for ($row = ($driver->firstRow() + 1); $row < $driver->lastRow(); $row++) {
+        for ($row = ($driver->firstRow() + 1); $row <= $driver->lastRow(); $row++) {
             // Reset properties on each iteration
             $this->preparedFields = [];
-            $this->currentRealRow = [];
+            $this->currentRealRows = [];
 
             foreach ($tables as $tableOrder => $table) {
                 $fields = $this->fieldsMap[$tableOrder];
@@ -167,7 +167,9 @@ class Importer
                 if (!isset($fields['__exclude']) || !$fields['__exclude']) {
                     if (isset($fields['__foreign'])) {
                         foreach ($fields['__foreign'] as $referenceTable => $foreignField) {
-                            if (isset($this->saved[$referenceTable])) {
+                            // Only if foreign key is set and is real value add it as reference,
+                            // otherwise omit this field. It automatically applied to NULL on DB level.
+                            if (isset($this->saved[$referenceTable]) && $this->saved[$referenceTable]) {
                                 $item[$foreignField] = $this->saved[$referenceTable];
                             }
                         }
@@ -194,12 +196,11 @@ class Importer
 
     public function save(array $row, $table)
     {
-        if (!count($row)) {
+        if (!array_filter($row)) {
             return false;
         }
         $id = $this->getIds($row, $table); // important place here
         try {
-
             // We run preprocessor handle directly before save for have access to $row ID.
             // For example, save default values only if there is no ID in $row.
             $row = $this->handlePreprocessor($row);
@@ -274,16 +275,16 @@ class Importer
             return false;
         }
 
-        $realRow = $this->getRealRow($row, $table);
+        $realRows = $this->getRealRow($row, $table);
         //$realRow = $this->getCurrentRealRow($row, $table);
 
         if ($apply) {
-            $this->applyId($row, $realRow, $identifierField);
+            $this->applyId($row, $realRows, $identifierField);
         }
 
         $ids = array_map(function ($id) {
             return $id['id'];
-        }, $realRow);
+        }, $realRows);
 
         return $ids;
     }
@@ -318,12 +319,12 @@ class Importer
         $realRow = $this->db->fetchAll($sql, $this->flatten($identifiers));
 
         // $currentRealRow is reset on each iteration
-        $this->currentRealRow[$table] = $realRow;
+        $this->currentRealRows[$table] = $realRow;
 
         return $realRow;
     }
 
-    protected function getIdentifierField($table, $identifierCustom = false)
+    public function getIdentifierField($table, $identifierCustom = false)
     {
         $identifierField = ($identifierField = $this->getTableFieldsMap($table, '__identifier'))
             ? $identifierField
@@ -370,11 +371,12 @@ class Importer
      * Apply inner DB id to row
      *
      * @param $row
-     * @param $ids
+     * @param $id
      * @param $identifierField
      */
-    protected function applyId(& $row, $ids, $identifierField)
+    protected function applyId(& $row, $id, $identifierField)
     {
+        $ids = (array) $id;
         $findId = function ($row) use ($ids, $identifierField) {
             foreach ($ids as $id) {
                 // Foton == FOTON
@@ -405,12 +407,13 @@ class Importer
     {
         try {
             $this->configHandler->getVariably()->set('fields', $row);
+            #$this->configHandler->getVariably()->set('originFields', $row);
             $value = $this->configHandler->process($value, $params);
         } catch (\Exception $e) {
             $this->messages['error'][] = $e->getMessage();
         }
 
-        if (is_string($params)) {
+        /*if (is_string($params)) {
             // if field not has any preparations
             $row[$params] = ($value !== null) ? $value : '';
         } elseif (isset($params['name']) && is_array($value)) {
@@ -422,7 +425,9 @@ class Importer
         } else {
             // if field contains values for multi-dimensional save
             $row = $value;
-        }
+        }*/
+
+        $this->preprocessor->correlate($row, $value, $params);
 
         return $row;
     }
@@ -487,7 +492,7 @@ class Importer
     }
 
     /**
-     * Get current real row saved in database.
+     * Get current real rows saved in database.
      *
      * This method reduce number of queries to database.
      * You should be sure identifier fields already processed and are available in $preparedFields.
@@ -497,15 +502,25 @@ class Importer
      * @param string $table
      * @return array
      */
-    public function getCurrentRealRow($table = null)
+    public function getCurrentRealRows($table = null)
     {
         $table = $table ?: $this->getCurrentTable();
-        if (!$this->currentRealRow[$table]) {
+        if (!$this->currentRealRows[$table]) {
             $fields = $this->getPreparedFields()[$table];
-            $this->currentRealRow[$table] = $this->getRealRow($fields, $table);
+            $this->currentRealRows[$table] = $this->getRealRow($fields, $table);
         }
 
-        return $this->currentRealRow[$table];
+        return $this->currentRealRows[$table];
+    }
+
+    public function getCurrentRealRow($table = null)
+    {
+        $realRow = $this->getCurrentRealRows($table);
+        if (count($realRow) === 1) {
+            $realRow = $realRow[0];
+        }
+
+        return $realRow;
     }
 
     public function getTableFieldsMap($table, $field = false)
