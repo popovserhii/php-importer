@@ -408,6 +408,7 @@ class Importer
         try {
             $this->configHandler->getVariably()->set('fields', $row);
             #$this->configHandler->getVariably()->set('originFields', $row);
+
             $value = $this->configHandler->process($value, $params);
         } catch (\Exception $e) {
             $this->messages['error'][] = $e->getMessage();
