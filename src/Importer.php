@@ -506,7 +506,7 @@ class Importer
     public function getCurrentRealRows($table = null)
     {
         $table = $table ?: $this->getCurrentTable();
-        if (!$this->currentRealRows[$table]) {
+        if (!isset($this->currentRealRows[$table]) || !$this->currentRealRows[$table]) {
             $fields = $this->getPreparedFields()[$table];
             $this->currentRealRows[$table] = $this->getRealRow($fields, $table);
         }
