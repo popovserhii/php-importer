@@ -205,6 +205,10 @@ class Importer
             // For example, save default values only if there is no ID in $row.
             $row = $this->handlePreprocessor($row);
 
+            if (!$row) {
+                return false;
+            }
+
             $this->trigger('save', $row);
             $this->trigger('save.' . $this->getCurrentFieldsMap('__codename'), $row);
 
