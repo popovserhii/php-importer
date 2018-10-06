@@ -3,9 +3,8 @@
  * Import service
  *
  * @category Popov
- * @package Popov_Spare
+ * @package Popov_Importer
  * @author Serhii Popov <popow.serhii@gmail.com>
- * @datetime: 16.12.2015 17:36
  */
 namespace Popov\Importer;
 
@@ -104,9 +103,33 @@ class Importer
 
     public function import($task, $source)
     {
-        $driver = $this->getDriver($task, $source);
         $this->profiling();
-		$this->fieldsMap = $this->fieldsMap ?: $driver->config()['fields'];
+        try {
+            $this->runImport($task, $source);
+        } catch (\Exception $e) {
+            $this->messages['error'][] = $e->getMessage();
+            #    echo("Caught Exception: " . $ex->getMessage() . "\n");
+            #    echo("Response Status Code: " . $ex->getStatusCode() . "\n");
+            #    echo("Error Code: " . $ex->getErrorCode() . "\n");
+            #    echo("Error Type: " . $ex->getErrorType() . "\n");
+            #    echo("Request ID: " . $ex->getRequestId() . "\n");
+            #    echo("XML: " . $ex->getXML() . "\n");
+            #    echo("ResponseHeaderMetadata: " . $ex->getResponseHeaderMetadata() . "\n");
+        }
+
+        // execution time of the script
+        $this->messages['info'][] = sprintf('Total Execution Time: %s Mins', $this->profiling(false));
+        if (!$hasErrors = $this->hasErrors()) {
+            $this->messages['success'][] = 'Data has been imported successfully!';
+        }
+
+        return !$hasErrors;
+    }
+
+    protected function runImport($task, $source)
+    {
+        $driver = $this->getDriver($task, $source);
+        $this->fieldsMap = $this->fieldsMap ?: $driver->config()['fields'];
 
         $tables = [];
         for ($col = $driver->firstColumn(); $col <= $driver->lastColumn(); $col++) {
@@ -135,8 +158,8 @@ class Importer
             }
         }
         ksort($tables);
-		
-        
+
+
         // Skip head row
         for ($row = ($driver->firstRow() + 1); $row <= $driver->lastRow(); $row++) {
             // Reset properties on each iteration
@@ -184,14 +207,6 @@ class Importer
             }
             $this->saved = [];
         }
-
-        // execution time of the script
-        $this->messages['info'][] = sprintf('Total Execution Time: %s Mins', $this->profiling(false));
-        if (!$hasErrors = $this->hasErrors()) {
-            $this->messages['success'][] = 'Data has been imported successfully!';
-        }
-
-        return !$hasErrors;
     }
 
     public function save(array $row, $table)
@@ -412,6 +427,7 @@ class Importer
         try {
             $this->configHandler->getVariably()->set('fields', $row);
             #$this->configHandler->getVariably()->set('originFields', $row);
+
             $value = $this->configHandler->process($value, $params);
         } catch (\Exception $e) {
             $this->messages['error'][] = $e->getMessage();
@@ -509,7 +525,7 @@ class Importer
     public function getCurrentRealRows($table = null)
     {
         $table = $table ?: $this->getCurrentTable();
-        if (!$this->currentRealRows[$table]) {
+        if (!isset($this->currentRealRows[$table]) || !$this->currentRealRows[$table]) {
             $fields = $this->getPreparedFields()[$table];
             $this->currentRealRows[$table] = $this->getRealRow($fields, $table);
         }
