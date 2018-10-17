@@ -103,11 +103,11 @@ class Importer
 
     public function import($task, $source)
     {
-        #$this->profiling();
-        #try {
+        $this->profiling();
+        try {
             $this->runImport($task, $source);
-        #} catch (\Exception $e) {
-            #$this->messages['error'][] = $e->getMessage();
+        } catch (\Exception $e) {
+            $this->messages['error'][] = $e->getMessage();
             ###    echo("Caught Exception: " . $ex->getMessage() . "\n");
             ###    echo("Response Status Code: " . $ex->getStatusCode() . "\n");
             ###    echo("Error Code: " . $ex->getErrorCode() . "\n");
@@ -115,7 +115,7 @@ class Importer
             ###    echo("Request ID: " . $ex->getRequestId() . "\n");
             ###    echo("XML: " . $ex->getXML() . "\n");
             ###    echo("ResponseHeaderMetadata: " . $ex->getResponseHeaderMetadata() . "\n");
-        #}
+        }
 
         // execution time of the script
         $this->messages['info'][] = sprintf('Total Execution Time: %s Mins', $this->profiling(false));
