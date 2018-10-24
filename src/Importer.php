@@ -50,7 +50,10 @@ class Importer
      */
     protected $config;
 
-    protected $fieldsMap = [];
+    /**
+     * @var array
+     */
+    protected $fieldsMap;
 
     protected $tableOrders;
 
@@ -129,7 +132,12 @@ class Importer
     protected function runImport($task, $source)
     {
         $driver = $this->getDriver($task, $source);
-        $this->fieldsMap = $this->fieldsMap ?: $driver->config()['fields'];
+        $this->fieldsMap = /*$this->fieldsMap ?:*/ $driver->config()['fields'];
+
+        // reset
+        $this->tableOrders = null;
+        $this->fieldOrders = null;
+        $this->codenamedOrders = null;
 
         $tables = [];
         for ($col = $driver->firstColumn(); $col <= $driver->lastColumn(); $col++) {
@@ -231,6 +239,7 @@ class Importer
             $this->{$modeMethod}($row, $table);
 
             $this->trigger('save.post', $row);
+            //$this->trigger('save.post.' . $this->getCurrentFieldsMap('__codename'), $row);
 
             $isDeep = $this->isDeep($row);
             $isDeepCond = $isDeep && (count($id) !== count($row));
