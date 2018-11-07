@@ -276,7 +276,18 @@ class Importer
         if ($isDeep) {
             $db->multipleSave($table, $row);
         } else {
-            $db->save($table, $row);
+            // When a table has at least one unique field and this field(s) is the same as field(s) in '__identifier'
+            // you can enable `unique` for performance benefit,
+            // otherwise if you can not mark field as unique will be used standard SELECT-INSERT/UPDATE approach.
+            if (isset($this->config['__options']['unique']) && $this->config['__options']['unique']) {
+                $db->save($table, $row);
+            } else {
+                if (isset($row['id']) && $row['id']) {
+                    $db->update($table, $row, 'id = "' . $row['id'] . '"');
+                } else {
+                    $db->add($table, $row);
+                }
+            }
         }
     }
 
