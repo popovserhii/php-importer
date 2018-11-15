@@ -285,6 +285,7 @@ class Importer
                 if (isset($row['id']) && $row['id']) {
                     $db->update($table, $row, 'id = "' . $row['id'] . '"');
                 } else {
+                    unset($row['id']);
                     $db->add($table, $row);
                 }
             }
