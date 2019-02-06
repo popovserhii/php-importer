@@ -300,7 +300,7 @@ class Importer
                 // @todo Винести це в конігурацію.
                 // INSERT/UPDATE statement in STRICT mode
                 // throw error SQLSTATE[HY000]: General error: 1364 Field 'fieldName' doesn't have a default value
-                $this->getDb()->exec('SET SESSION sql_mode = "NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"');
+                $this->getDb()->exec('SET SESSION sql_mode = "NO_ENGINE_SUBSTITUTION"');
                 $sqlMode = true;
             }
             $this->saveMode($row, $table);
