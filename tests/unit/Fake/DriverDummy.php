@@ -38,13 +38,13 @@ class DriverDummy implements DriverInterface
         // TODO: Implement lastRow() method.
     }
 
-    public function read($row, $column)
+    public function read($row, $column = null)
     {
         // TODO: Implement read() method.
     }
 
-    public function config()
+    public function &config(array $config = [])
     {
-        // TODO: Implement config() method.
+        return $this;
     }
 }

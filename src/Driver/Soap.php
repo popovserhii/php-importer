@@ -182,7 +182,7 @@ class Soap implements DriverInterface
     /**
      * {@inheritDoc}
      */
-    public function &config()
+    public function &config(array $config = [])
     {
         return $this->config;
     }

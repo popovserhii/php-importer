@@ -9,10 +9,10 @@
  */
 namespace PopovTest\Importer\Factory;
 
-use Interop\Container\ContainerInterface;
 use Mockery;
+use PopovTest\Importer\Bootstrap;
 use Zend\Stdlib\Exception;
-use PHPUnit_Framework_TestCase as TestCase;
+use PHPUnit\Framework\TestCase;
 use Popov\Importer\DriverCreator;
 use Popov\Importer\Driver\Soap;
 use PopovTest\Importer\Fake\DriverDummy;
@@ -29,14 +29,15 @@ class FactoryTest extends TestCase
 
     public function testThrowExceptionIfTaskNotRegistered()
     {
-        $factory = new DriverCreator(['tasks' => []]);
+        //$containter = Bootstrap::getServiceManager();
+        $factory = new DriverCreator($container = null, ['tasks' => []]);
         $this->expectException(Exception\RuntimeException::class);
         $factory->create('notexist');
     }
 
     public function testThrowExceptionIfTaskIssetBuDriverNotRegistered()
     {
-        $factory = new DriverCreator([
+        $factory = new DriverCreator($container = null, [
             'tasks' => [
                 'discount-card' => []
             ]
@@ -47,7 +48,7 @@ class FactoryTest extends TestCase
 
     public function testThrowExceptionIfDriverNotFound()
     {
-        $factory = new DriverCreator([
+        $factory = new DriverCreator($container = null, [
             'tasks' => [
                 'discount-card' => [
                     'driver' => 'baddriver',
@@ -58,17 +59,22 @@ class FactoryTest extends TestCase
         $factory->create('discountcard');
     }
 
-    public function testCreatePreregisteredDriver()
+    public function testCreatePreregisteredSoapDriver()
     {
-        $factory = new DriverCreator([
+        if (!class_exists('Zend\Soap\Client')) {
+            // skip assertion
+            return $this->assertTrue(true);
+        }
+
+        $factory = new DriverCreator($container = null, [
             'driver_options' => [
                 'soap' => [
                     'connection' => [],
                 ],
             ],
             'tasks' => [
-                'discount-card' => [
-                    'driver' => 'soap',
+                'discountcard' => [
+                    'driver' => 'Soap',
                 ],
             ],
         ]);
@@ -79,7 +85,7 @@ class FactoryTest extends TestCase
 
     public function testCreateCustomDriver()
     {
-        $factory = new DriverCreator([
+        $factory = new DriverCreator($container = null, [
             'drivers' => [
                 'dummy' => DriverDummy::class
             ],
@@ -96,7 +102,7 @@ class FactoryTest extends TestCase
 
     public function testCreateCustomDriverThroughContainer()
     {
-        $factory = new DriverCreator([
+        $factory = new DriverCreator($container = null, [
             'drivers' => [
                 'dummy' => DriverDummy::class
             ],

@@ -11,7 +11,7 @@ namespace PopovTest\Importer\Adapter;
 
 use Mockery;
 use Zend\Stdlib\Exception;
-use PHPUnit_Framework_TestCase as TestCase;
+use PHPUnit\Framework\TestCase;
 use Zend\Soap\Client as SoapClient;
 use Popov\Importer\Driver\Adapter\SoapCombinedAdapter;
 

@@ -8,6 +8,7 @@
  */
 namespace Popov\Importer;
 
+use Psr\Log\LoggerInterface;
 use Zend\Stdlib\Exception;
 use Popov\Importer\Driver\DriverInterface;
 use Popov\Variably\ConfigHandler;
@@ -46,6 +47,11 @@ class Importer
     protected $observable;
 
     /**
+     * @var LoggerInterface
+     */
+    protected $logger;
+
+    /**
      * @var array
      */
     protected $config;
@@ -72,7 +78,7 @@ class Importer
 
     /**
      * Messages of import process.
-     * Can be "info", "error", "success"
+     * Log level can be "info", "error", "success" etc.
      */
     protected $messages = [];
 
@@ -83,25 +89,64 @@ class Importer
     public function __construct(
         Db $db,
         ConfigHandler $configHandler,
-        Preprocessor $preprocessor = null,
+        Preprocessor $preprocessor,
         DriverCreator $driverCreator = null,
         ObservableInterface $observable = null,
-        //HelperCreator $helperCreator = null
+        LoggerInterface $logger = null,
         array $config = null
     )
     {
         $this->db = $db;
-        $this->preprocessor = $preprocessor;
         $this->configHandler = $configHandler;
+        $this->preprocessor = $preprocessor;
         #$this->configHandler = $preprocessor->getConfigHandler();
-        $this->driverCreator = $driverCreator ?? new DriverCreator([]);
+        $this->driverCreator = $driverCreator ?? new DriverCreator(null, []);
         $this->observable = $observable;
+        $this->logger = $logger;
 
-        $this->driverCreator->setConfig($config['importer']);
-        $this->configHandler->setConfig($config['importer'])
+        $this->driverCreator->setConfig($config['importer'] ?? $config);
+        $this->configHandler->setConfig($config['importer'] ?? $config)
             ->getVariably()->set('importer', $this);
 
-        $this->config = $config;
+        $this->config = $config['importer'] ?? $config;
+    }
+
+    public function getDb()
+    {
+        return $this->db;
+    }
+
+    public function getPdo()
+    {
+        return $this->db->getPdo();
+    }
+
+    public function setPreprocessor(Preprocessor $preprocessor)
+    {
+        $this->preprocessor = $preprocessor;
+
+        return $this;
+    }
+
+    public function setDriverCreator(DriverCreator $driverCreator)
+    {
+        $this->driverCreator = $driverCreator;
+
+        return $this;
+    }
+
+    public function setObservable(Observable $observable)
+    {
+        $this->observable = $observable;
+
+        return $this;
+    }
+
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+
+        return $this;
     }
 
     public function import($task, $source)
@@ -110,21 +155,16 @@ class Importer
         try {
             $this->runImport($task, $source);
         } catch (\Exception $e) {
-            $this->messages['error'][] = $e->getMessage();
-            ###    echo("Caught Exception: " . $ex->getMessage() . "\n");
-            ###    echo("Response Status Code: " . $ex->getStatusCode() . "\n");
-            ###    echo("Error Code: " . $ex->getErrorCode() . "\n");
-            ###    echo("Error Type: " . $ex->getErrorType() . "\n");
-            ###    echo("Request ID: " . $ex->getRequestId() . "\n");
-            ###    echo("XML: " . $ex->getXML() . "\n");
-            ###    echo("ResponseHeaderMetadata: " . $ex->getResponseHeaderMetadata() . "\n");
+            $this->log('error', $e);
         }
 
         // execution time of the script
-        $this->messages['info'][] = sprintf('Total Execution Time: %s Mins', $this->profiling(false));
-        if (!$hasErrors = $this->hasErrors()) {
-            $this->messages['success'][] = 'Data has been imported successfully!';
-        }
+        $this->log('info', sprintf('Total Execution Time: %s Mins', $this->profiling(false)));
+        #$this->messages['info'][] = sprintf('Total Execution Time: %s Mins', $this->profiling(false));
+
+        ($hasErrors = $this->hasErrors())
+            ? $this->log('error', 'During the import the errors occurred!')
+            : $this->log('info', 'Data has been imported successfully!');
 
         return !$hasErrors;
     }
@@ -132,12 +172,15 @@ class Importer
     protected function runImport($task, $source)
     {
         $driver = $this->getDriver($task, $source);
-        $this->fieldsMap = /*$this->fieldsMap ?:*/ $driver->config()['fields'];
+        $this->fieldsMap = $driver->config()['fields'];
 
         // reset
         $this->tableOrders = null;
         $this->fieldOrders = null;
         $this->codenamedOrders = null;
+        $this->messages = [];
+
+        $this->trigger('run', $driver);
 
         $tables = [];
         for ($col = $driver->firstColumn(); $col <= $driver->lastColumn(); $col++) {
@@ -215,6 +258,8 @@ class Importer
             }
             $this->saved = [];
         }
+
+        $this->trigger('run.post', $driver);
     }
 
     public function save(array $row, $table)
@@ -254,7 +299,7 @@ class Importer
                 ? ($id ? current($id) : false) // if __identifier set to false then return false
                 : $id;
         } catch (\Exception $e) {
-            $this->messages['error'][] = $e->getMessage();
+            $this->log('error', $e);
         }
 
         return $id;
@@ -451,22 +496,8 @@ class Importer
 
             $value = $this->configHandler->process($value, $params);
         } catch (\Exception $e) {
-            $this->messages['error'][] = $e->getMessage();
+            $this->log('error', $e);
         }
-
-        /*if (is_string($params)) {
-            // if field not has any preparations
-            $row[$params] = ($value !== null) ? $value : '';
-        } elseif (isset($params['name']) && is_array($value)) {
-            // if field contains values for different fields of one table
-            $row = array_merge($row, $value);
-        } elseif (isset($params['name'])) {
-            // if field has preparation
-            $row[$params['name']] = ($value !== null) ? $value : '';
-        } else {
-            // if field contains values for multi-dimensional save
-            $row = $value;
-        }*/
 
         $this->preprocessor->correlate($row, $value, $params);
 
@@ -706,16 +737,30 @@ class Importer
         return false;
     }
 
+    /**
+     * @param $message
+     * @param string $namespace
+     * @deprecated Use log method instead
+     */
     public function addMessage($message, $namespace = 'info')
     {
         $this->messages[$namespace][] = $message;
     }
 
+    /**
+     * @param array $messages
+     * @param $namespace
+     * @deprecated
+     */
     public function setMessages(array $messages, $namespace)
     {
         $this->messages[$namespace] = $messages;
     }
 
+    /**
+     * @return array
+     * @deprecated
+     */
     public function getMessages()
     {
         return $this->messages;
@@ -733,16 +778,6 @@ class Importer
         }
 
         return false;
-    }
-
-    public function getDb()
-    {
-        return $this->db;
-    }
-
-    public function getPdo()
-    {
-        return $this->db->getPdo();
     }
 
     public function setFieldsMap($orderTable, $options)
@@ -781,6 +816,36 @@ class Importer
         if ($this->observable) {
             $params['context'] = $this;
             $this->observable->trigger($eventName, $target, $params);
+        }
+    }
+
+    /**
+     * Wrapper upon logger.
+     *
+     * This method write all messages in file if logger is passed and also collect them in memory
+     * for following process at the end of execution.
+     * All not "info" messages are grouped with number of repeats prefix.
+     *
+     * Each next "run" resets "messages" that is why you should process this information after each execution.
+     *
+     * @param string $level
+     * @param string $message
+     * @param array $context
+     */
+    public function log($level, $message, array $context = [])
+    {
+        static $counter = [];
+
+        !$this->logger || $this->logger->log($level, $message, $context);
+
+        // If message is exception convert it to string
+        $message = is_object($message) ? $message->__toString() : $message;
+        // Group identical messages with add suffix number
+        if (isset($this->messages[$level][$hash = md5($message)])) {
+            $this->messages[$level][$hash] = '(' . ++$counter[$hash] . ') ' . $message;
+        } else {
+            $counter[$hash] = 1;
+            $this->messages[$level][$hash] = $message;
         }
     }
 }
