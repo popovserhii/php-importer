@@ -183,23 +183,23 @@ class Importer
         $this->trigger('run', $driver);
 
         $tables = [];
-        for ($col = $driver->firstColumn(); $col <= $driver->lastColumn(); $col++) {
+        for ($colIndex = $driver->firstColumn(); $colIndex <= $driver->lastColumn(); $colIndex++) {
             $tableOrder = null;
-            $title = $driver->read($driver->firstRow(), $col);
+            $title = $driver->read($driver->firstRow(), $colIndex);
             foreach ($this->fieldsMap as $table) {
                 if (isset($table[$title])) {
                     $tableOrder = $this->getTableOrder($table['__table']);
                     $fieldOrder = $this->getFieldOrder($title, $table['__table']);
-                    $tables[$tableOrder][$fieldOrder] = ['index' => $col, 'name' => $title];
+                    $tables[$tableOrder][$fieldOrder] = ['index' => $colIndex, 'name' => $title];
                 } elseif (isset($table['__dynamic'])) {
                     if (!isset($indexStartAfter)
                         && isset($table['__options']['startAfter'])
                         && ($table['__options']['startAfter'] == $title)
                     ) {
-                        $indexStartAfter = $col; // find 'startAfter' column index
-                    } elseif (isset($indexStartAfter) && $indexStartAfter < $col && ($title = trim($title))) {
+                        $indexStartAfter = $colIndex; // find 'startAfter' column index
+                    } elseif (isset($indexStartAfter) && $indexStartAfter < $colIndex && ($title = trim($title))) {
                         $tableOrder = $this->getTableOrder($table['__table']);
-                        $tables[$tableOrder][] = ['index' => $col, 'name' => $title];
+                        $tables[$tableOrder][] = ['index' => $colIndex, 'name' => $title];
                         $this->fieldsMap[$tableOrder][$title] = $table['__dynamic'];
                     }
                 }
@@ -212,7 +212,7 @@ class Importer
 
 
         // Skip head row
-        for ($row = ($driver->firstRow() + 1); $row <= $driver->lastRow(); $row++) {
+        for ($rowIndex = ($driver->firstRow() + 1); $rowIndex <= $driver->lastRow(); $rowIndex++) {
             // Reset properties on each iteration
             $this->preparedFields = [];
             $this->currentRealRows = [];
@@ -221,19 +221,36 @@ class Importer
                 $fields = $this->fieldsMap[$tableOrder];
                 $tableName = $fields['__table'];
                 $this->saved[$tableName] = null;
-                $item = [];
+
+                $raw = $driver->read($rowIndex); // Raw row - not handled yet
+
+                // Collect data from one table in array
+                $related = [];
                 foreach ($table as $column) {
-                    $field = $fields[$column['name']];
-                    if (false === ($value = $driver->read($row, $column['index']))) {
+                    if (!isset($raw[$column['name']])) {
                         // Skip wrong value address
                         continue;
                     }
+                    $related[$column['name']] = $raw[$column['name']];
+                }
 
+                // Filters all NULL, FALSE and Empty Strings but leaves 0 (zero) values
+                // @see http://php.net/manual/en/function.array-filter.php#111091
+                //if (!array_filter($related, 'strlen')) {
+                if (!array_filter($related)) {
+                    continue;
+                }
+
+                // Handle raw data
+                $item = [];
+                foreach ($related as $columnName => $value) {
+                    $field = $fields[$columnName];
                     $this->handleField($value, $field, $item);
                     $this->preparedFields[$tableName] = $item;
                 }
 
-                if (!$item) {
+                // @todo Add filter based on @see
+                if (!$item/* || $this->handleFilter()*/) {
                     continue;
                 }
 
@@ -257,6 +274,7 @@ class Importer
                 }
             }
             $this->saved = [];
+
         }
 
         $this->trigger('run.post', $driver);
@@ -491,8 +509,10 @@ class Importer
     protected function handleField($value, $params, & $row)
     {
         try {
+            $codename = $this->getCurrentFieldsMap('__codename');
             $this->configHandler->getVariably()->set('fields', $row);
             #$this->configHandler->getVariably()->set('originFields', $row);
+            $this->configHandler->getVariably()->set($codename, $row);
 
             $value = $this->configHandler->process($value, $params);
         } catch (\Exception $e) {
@@ -527,7 +547,8 @@ class Importer
      * @param $source
      * @return DriverInterface
      */
-    public function getDriver($configTask, $source) {
+    public function getDriver($configTask, $source)
+     {
         $driverFactory = $this->getDriverCreator();
         /** @var DriverInterface $driver */
         $driver = $driverFactory->create($configTask);
