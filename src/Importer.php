@@ -77,6 +77,13 @@ class Importer
     protected $currentRealRows = [];
 
     /**
+     * Unhandled set of row data
+     *
+     * @var array
+     */
+    protected $currentRawRow = [];
+
+    /**
      * Messages of import process.
      * Log level can be "info", "error", "success" etc.
      */
@@ -222,16 +229,16 @@ class Importer
                 $tableName = $fields['__table'];
                 $this->saved[$tableName] = null;
 
-                $raw = $driver->read($rowIndex); // Raw row - not handled yet
+                $this->currentRawRow = $driver->read($rowIndex); // Raw row - not handled yet
 
                 // Collect data from one table in array
                 $related = [];
                 foreach ($table as $column) {
-                    if (!isset($raw[$column['name']])) {
+                    if (!isset($this->currentRawRow[$column['name']])) {
                         // Skip wrong value address
                         continue;
                     }
-                    $related[$column['name']] = $raw[$column['name']];
+                    $related[$column['name']] = $this->currentRawRow[$column['name']];
                 }
 
                 // Filters all NULL, FALSE and Empty Strings but leaves 0 (zero) values
@@ -273,8 +280,8 @@ class Importer
                     $this->saved[$tableName] = $this->save($item, $tableName);
                 }
             }
+            $this->currentRawRow = [];
             $this->saved = [];
-
         }
 
         $this->trigger('run.post', $driver);
@@ -614,6 +621,18 @@ class Importer
         }
 
         return $realRow;
+    }
+
+    /**
+     * Get full set of unhandled data from driver not grouped by table
+     *
+     * Not recommended to use. Use very carefully.
+     *
+     * @return array
+     */
+    public function getCurrentRawRow()
+    {
+        return $this->currentRawRow;
     }
 
     public function getTableFieldsMap($table, $field = false)
