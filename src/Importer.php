@@ -8,6 +8,7 @@
  */
 namespace Popov\Importer;
 
+use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Zend\Stdlib\Exception;
 use Popov\Importer\Driver\DriverInterface;
@@ -161,6 +162,8 @@ class Importer
         $this->profiling();
         try {
             $this->runImport($task, $source);
+        } catch (\Throwable $e) {
+            $this->log('error', $e);
         } catch (\Exception $e) {
             $this->log('error', $e);
         }
@@ -187,6 +190,7 @@ class Importer
         $this->codenamedOrders = null;
         $this->messages = [];
 
+        $this->log('info', sprintf('%s started data processing...', $driverName = $this->getShortDriverName($driver)));
         $this->trigger('run', $driver);
 
         $tables = [];
@@ -217,7 +221,7 @@ class Importer
         }
         ksort($tables);
 
-
+        $successCounter = 0;
         // Skip head row
         for ($rowIndex = ($driver->firstRow() + 1); $rowIndex <= $driver->lastRow(); $rowIndex++) {
             // Reset properties on each iteration
@@ -241,9 +245,6 @@ class Importer
                     $related[$column['name']] = $this->currentRawRow[$column['name']];
                 }
 
-                // Filters all NULL, FALSE and Empty Strings but leaves 0 (zero) values
-                // @see http://php.net/manual/en/function.array-filter.php#111091
-                //if (!array_filter($related, 'strlen')) {
                 if (!array_filter($related)) {
                     continue;
                 }
@@ -280,9 +281,14 @@ class Importer
                     $this->saved[$tableName] = $this->save($item, $tableName);
                 }
             }
+            $successCounter++;
             $this->currentRawRow = [];
             $this->saved = [];
         }
+
+        $this->log('info', sprintf('Number of all rows: %s', $rowIndex - 1));
+        $this->log('info', sprintf('Number of success handled rows: %s', $successCounter));
+        //$this->log('info', sprintf('%s finish data processing!', $driverName));
 
         $this->trigger('run.post', $driver);
     }
@@ -323,11 +329,16 @@ class Importer
             $id = (!isset($id[1]))
                 ? ($id ? current($id) : false) // if __identifier set to false then return false
                 : $id;
+
+            $this->log('debug', sprintf('Data in table "%s" saved', $table), $row);
+        } catch (\Throwable $e) {
+            $this->log('error', $e);
         } catch (\Exception $e) {
             $this->log('error', $e);
         }
 
-        return $id;
+
+            return $id;
     }
 
     protected function getModeMethod($table)
@@ -548,7 +559,7 @@ class Importer
     }
 
     /**
-     * Get driver
+     * Get driver and replace current logger if driver has its own logger
      *
      * @param $configTask
      * @param $source
@@ -560,6 +571,10 @@ class Importer
         /** @var DriverInterface $driver */
         $driver = $driverFactory->create($configTask);
         $driver->source($source);
+
+        if (method_exists($driver, 'getLogger') && $driver instanceof LoggerAwareInterface) {
+            $this->logger = $driver->getLogger();
+        }
 
         return $driver;
     }
@@ -849,6 +864,13 @@ class Importer
     public function getSaved($productTable)
     {
         return $this->saved[$productTable];
+    }
+
+    protected function getShortDriverName($driver)
+    {
+        $parts = explode('\\', get_class($driver));
+
+        return array_pop($parts);
     }
 
     protected function trigger($eventName, $target, $params = [])
