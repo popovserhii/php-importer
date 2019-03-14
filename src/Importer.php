@@ -184,7 +184,7 @@ class Importer
         $driver = $this->getDriver($task, $source);
         $this->fieldsMap = $driver->config()['fields'];
 
-        // reset
+        // Reset
         $this->tableOrders = null;
         $this->fieldOrders = null;
         $this->codenamedOrders = null;
@@ -337,8 +337,7 @@ class Importer
             $this->log('error', $e);
         }
 
-
-            return $id;
+        return $id;
     }
 
     protected function getModeMethod($table)
