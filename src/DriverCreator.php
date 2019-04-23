@@ -45,8 +45,8 @@ class DriverCreator
     {
         //$config = isset($config['importer']) ? $config['importer'] : $config;
 
-        $config['drivers'] = array_merge($this->drivers, (isset($config['drivers']) ? $config['drivers']: []));
-        $config['tasks'] = isset($config['tasks']) ? $config['tasks'] : [];
+        $config['drivers'] = array_merge($this->drivers, ($config['drivers'] ?? []));
+        $config['tasks'] = $config['tasks'] ?? [];
         // standardizes config key
         foreach ($config['tasks'] as $key => $value) {
             unset($config['tasks'][$key]);
@@ -82,10 +82,11 @@ class DriverCreator
         if (isset($this->config['drivers'][$driverKey])) {
             $driverClass = $this->config['drivers'][$driverKey];
         } else {
-            throw new Exception\RuntimeException('Any driver not registered for ' . $driverKey);
+            throw new Exception\RuntimeException('No driver registered for ' . $driverKey);
         }
 
-        $config += isset($this->config['driver_options'][$driverKey]) ? $this->config['driver_options'][$driverKey] : [];
+        //$config += isset($this->config['driver_options'][$driverKey]) ? $this->config['driver_options'][$driverKey] : [];
+        $config += $config['driver_options'] ?? [];
         $driver = $this->createDriver($driverClass)
             ->config($config);
 

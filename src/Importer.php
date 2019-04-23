@@ -10,7 +10,6 @@ namespace Popov\Importer;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
-use Zend\Stdlib\Exception;
 use Popov\Importer\Driver\DriverInterface;
 use Popov\Variably\ConfigHandler;
 use Popov\Variably\Preprocessor;

@@ -7,7 +7,7 @@
  * @author Serhii Popov <popow.serhii@gmail.com>
  * @datetime: 17.03.2017 16:54
  */
-namespace PopovTest\Importer\Factory;
+namespace PopovTest\Importer\Driver\Factory;
 
 use Mockery;
 use PopovTest\Importer\Bootstrap;

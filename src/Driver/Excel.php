@@ -37,7 +37,7 @@ class Excel implements DriverInterface
             return $this;
         }
 
-        return $this->source;
+        return $this->source ?? $this->config['source'];
     }
 
     /**
@@ -56,7 +56,7 @@ class Excel implements DriverInterface
      */
     public function firstRow()
     {
-        return 1;
+        return isset($this->config['sheet']['skip']) ? $this->config['sheet']['skip'] + 1 : 1;
     }
 
     /**
@@ -146,8 +146,8 @@ class Excel implements DriverInterface
 		if (!$xlSheet) {
 			$xlBook = $this->xlBook();
 
-			$xlSheet = isset($this->config['sheet'])
-                ? $xlBook->setLoadSheetsOnly($this->config['sheet'])
+			$xlSheet = isset($this->config['sheet']['name'])
+                ? $xlBook->setLoadSheetsOnly($this->config['sheet']['name'])
                 : $xlBook->getActiveSheet();
 		}
 		

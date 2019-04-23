@@ -10,6 +10,7 @@ composer require popov/php-importer -o
 
 ## Supported drivers
 1. LibXl ([commercial](http://www.libxl.com/))
+1. Excel
 1. Soap
 1. Csv (not implemented yet)
 
@@ -84,7 +85,46 @@ $factory = new DriverCreator($config, $container);
 $importer = new Importer($factory, $db);
 ```
 
-## Fields
+## Configuration
+
+Options marked with `*` are required.
+
+### `driver` *
+Driver is handler for data from `source`. 
+You can use one of the registered drivers or create your own.
+
+```php
+['driver' => 'Excel']
+```
+
+#### `driver_options`
+You can pass any custom options to driver, there is no limit for it.
+
+##### Excel options
+```
+[
+    'driver' => 'Excel',
+    "driver_options" => [
+        "path" => "data/path/to/excel.xlsx",
+        "sheet" => [
+            "name" => "Sheet Name",
+            "skip" => 2,
+        ],
+    ],
+]
+```
+
+##### `path` 
+Path to file which should be handled.
+
+##### `sheet: name` 
+Name of the sheet which should be handled. By default first sheet is taken.
+
+##### `shee: skip`
+Skip first *N* rows in file. By default first row is taken.
+
+----
+###`fields`
 Mapping fields from one resource to new (MySQL, CSV, Excel)
 
 The simples mapping can be written as:
@@ -105,23 +145,23 @@ Fields filtration and preparation can be grouped in chain
 *__prepare* - reserved name for preparation
  
 
-## Configuration
+
 All reserved options begin with "__" (double underscore).
 
-**`__table`**
+#### `__table`
 ```php
-'__table' => 'discount_card',
+'__table' => 'table_name',
 ```
 *Required*. A table where to save imported data.
 
 
-**`__codename`**
+#### `__codename`
 ```php
 '__codename' => 'discount',
 ```
 *Required*. Shortcut unique name for config related to table.
 
-**`__identifier`**
+#### `__identifier`
 ```php
 '__identifier' => 'serial',
 // or
@@ -129,19 +169,19 @@ All reserved options begin with "__" (double underscore).
 ```
 Unique field name for avoid duplicated items. Identifier can be as one field such as multiple fields.
                     
-**`__ignore`**
+#### `__ignore`
 ```php
 '__ignore' => ['comment'],
 ```
 Fields which should be ignored in save operation. These fields can be used in data filtration.  
                     
-**`__exclude`**       
+#### `__exclude`       
 ```php
 '__exclude' => false,
 ```             
 *Bool*. Exclude table from save operation. All fields can be used in data filtration. 
                     
-**`__exclude`**       
+#### `__exclude`      
 ```php
 '__foreign' => ['customer_table' => 'customerId'],
 
@@ -152,7 +192,7 @@ and review info in second group of fields. When first group will be saved the ID
 can use this value.   
 
 ### Options
-**`mode`**
+#### `mode`
 ```php
 '__options' => [
     'mode' => 'save'
