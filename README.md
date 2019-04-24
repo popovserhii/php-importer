@@ -120,7 +120,7 @@ Path to file which should be handled.
 ##### `sheet: name` 
 Name of the sheet which should be handled. By default first sheet is taken.
 
-##### `shee: skip`
+##### `sheet: skip`
 Skip first *N* rows in file. By default first row is taken.
 
 ----

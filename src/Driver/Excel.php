@@ -56,7 +56,9 @@ class Excel implements DriverInterface
      */
     public function firstRow()
     {
-        return isset($this->config['sheet']['skip']) ? $this->config['sheet']['skip'] + 1 : 1;
+        $index = isset($this->config['sheet']['skip']) ? $this->config['sheet']['skip'] + 1 : 1;
+
+        return $index;
     }
 
     /**
@@ -92,11 +94,22 @@ class Excel implements DriverInterface
         $xlSheet = $this->xlSheet();
 
         if (is_null($column)) {
+            $rowNames = [];
             $highestColumn = $xlSheet->getHighestColumn(); // e.g 'F'
             $highestColumnIndex = Cell\Coordinate::columnIndexFromString($highestColumn); // e.g. 5
             $value = [];
             for ($col = 1; $col <= $highestColumnIndex; ++$col) {
-                $value[] = $xlSheet->getCellByColumnAndRow($col, $row)->getCalculatedValue();
+                if (!isset($rowNames[$col])) {
+                    $rowName = $xlSheet->getCellByColumnAndRow($col, $this->firstRow())->getCalculatedValue();
+                    $rowNames[$col] = $rowName;
+                }
+
+                $rowName = $rowNames[$col];
+                if ($rowName) {
+                    $value[$rowName] = $xlSheet->getCellByColumnAndRow($col, $row)->getCalculatedValue();
+                } else {
+                    $value[$col] = $xlSheet->getCellByColumnAndRow($col, $row)->getCalculatedValue();
+                }
             }
         } else {
             $value = $xlSheet->getCellByColumnAndRow($column, $row)->getCalculatedValue();
