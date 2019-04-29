@@ -181,8 +181,6 @@ class Importer
     protected function runImport($task, $source)
     {
         $driver = $this->getDriver($task, $source);
-        $this->trigger('run', $driver);
-        $this->trigger('run.' . $task, $driver);
 
         $this->fieldsMap = $driver->config()['fields'];
 
@@ -193,6 +191,8 @@ class Importer
         $this->messages = [];
 
         $this->log('info', sprintf('%s started data processing...', $driverName = $this->getShortDriverName($driver)));
+        $this->trigger('run', $driver);
+        $this->trigger('run.' . $task, $driver); // here we can rewrite fieldsMap!
 
         $tables = [];
         for ($colIndex = $driver->firstColumn(); $colIndex <= $driver->lastColumn(); $colIndex++) {
