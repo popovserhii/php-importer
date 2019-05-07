@@ -316,10 +316,10 @@ class Importer
             $this->{$modeMethod}($row, $table);
 
             $this->trigger('save.post', $row);
-            //$this->trigger('save.post.' . $this->getCurrentFieldsMap('__codename'), $row);
+            $this->trigger('save.post.' . $this->getCurrentFieldsMap('__codename'), $row);
 
             $isDeep = $this->isDeep($row);
-            $isDeepCond = $isDeep && (count($id) !== count($row));
+            $isDeepCond = $isDeep && (($id && count($id)) !== count($row));
             // Double check if we have multiple array. We don't know which data will be inserted or updated
             if ($isDeepCond) {
                 $id = $this->getIds($row, $table, false);
@@ -355,7 +355,15 @@ class Importer
         $isDeep = $this->isDeep($row);
         $db = $this->getDb();
         if ($isDeep) {
-            $db->multipleSave($table, $row);
+            foreach ($row as $r) {
+                // @todo remove duplicate code
+                if (isset($r['id']) && $r['id']) {
+                    $db->update($table, $r, 'id = "' . $r['id'] . '"');
+                } else {
+                    unset($r['id']);
+                    $id = $db->add($table, $r);
+                }
+            }
         } else {
             // When a table has at least one unique field and this field(s) is the same as field(s) in '__identifier'
             // you can enable `unique` for performance benefit,
@@ -641,7 +649,7 @@ class Importer
     /**
      * Get full set of unhandled data from driver not grouped by table
      *
-     * Not recommended to use. Use very carefully.
+     * It is not recommended to use. Use very carefully.
      *
      * @return array
      */
