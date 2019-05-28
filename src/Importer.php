@@ -207,24 +207,24 @@ class Importer
         $this->log('info', sprintf('%s started data processing...', $driverName = $this->getShortDriverName($driver)));
 
         $tables = [];
+        $title = $driver->read($driver->firstRow());
         for ($colIndex = $driver->firstColumn(); $colIndex <= $driver->lastColumn(); $colIndex++) {
             $tableOrder = null;
-            $title = $driver->read($driver->firstRow(), $colIndex);
             foreach ($this->fieldsMap as $table) {
-                if (isset($table[$title])) {
+                if (isset($table[$title[$colIndex]])) {
                     $tableOrder = $this->getTableOrder($table['__table']);
-                    $fieldOrder = $this->getFieldOrder($title, $table['__table']);
-                    $tables[$tableOrder][$fieldOrder] = ['index' => $colIndex, 'name' => $title];
+                    $fieldOrder = $this->getFieldOrder($title[$colIndex], $table['__table']);
+                    $tables[$tableOrder][$fieldOrder] = ['index' => $colIndex, 'name' => $title[$colIndex]];
                 } elseif (isset($table['__dynamic'])) {
                     if (!isset($indexStartAfter)
                         && isset($table['__options']['startAfter'])
-                        && ($table['__options']['startAfter'] == $title)
+                        && ($table['__options']['startAfter'] == $title[$colIndex])
                     ) {
                         $indexStartAfter = $colIndex; // find 'startAfter' column index
-                    } elseif (isset($indexStartAfter) && $indexStartAfter < $colIndex && ($title = trim($title))) {
+                    } elseif (isset($indexStartAfter) && $indexStartAfter < $colIndex && ($title[$colIndex] = trim($title[$colIndex]))) {
                         $tableOrder = $this->getTableOrder($table['__table']);
-                        $tables[$tableOrder][] = ['index' => $colIndex, 'name' => $title];
-                        $this->fieldsMap[$tableOrder][$title] = $table['__dynamic'];
+                        $tables[$tableOrder][] = ['index' => $colIndex, 'name' => $title[$colIndex]];
+                        $this->fieldsMap[$tableOrder][$title[$colIndex]] = $table['__dynamic'];
                     }
                 }
             }

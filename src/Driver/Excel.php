@@ -17,6 +17,8 @@ class Excel implements DriverInterface
 {
     protected $source;
 
+    protected $headers;
+
     protected $config = [
         //'sheet' => 0,
     ];
@@ -104,12 +106,19 @@ class Excel implements DriverInterface
                     $rowNames[$col] = $rowName;
                 }
 
-                $rowName = $rowNames[$col];
-                if ($rowName) {
-                    $value[$rowName] = $xlSheet->getCellByColumnAndRow($col, $row)->getCalculatedValue();
+                if ($this->headers) {
+                    $rowName = $rowNames[$col];
+                    if ($rowName) {
+                        $value[$rowName] = $xlSheet->getCellByColumnAndRow($col, $row)->getCalculatedValue();
+                    } else {
+                        $value[$col] = $xlSheet->getCellByColumnAndRow($col, $row)->getCalculatedValue();
+                    }
                 } else {
-                    $value[$col] = $xlSheet->getCellByColumnAndRow($col, $row)->getCalculatedValue();
+                    $value[$col] = $rowNames[$col];
                 }
+            }
+            if (!$this->headers) {
+                $this->headers = $value;
             }
         } else {
             $value = $xlSheet->getCellByColumnAndRow($column, $row)->getCalculatedValue();
