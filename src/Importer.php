@@ -241,12 +241,12 @@ class Importer
             $this->preparedFields = [];
             $this->currentRealRows = [];
 
+            $this->currentRawRow = $driver->read($rowIndex); // Raw row - not handled yet
+
             foreach ($tables as $tableOrder => $table) {
                 $fields = $this->fieldsMap[$tableOrder];
                 $tableName = $fields['__table'];
                 $this->saved[$tableName] = null;
-
-                $this->currentRawRow = $driver->read($rowIndex); // Raw row - not handled yet
 
                 // Collect data from one table in array
                 $related = [];
