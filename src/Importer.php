@@ -207,32 +207,34 @@ class Importer
         $this->log('info', sprintf('%s started data processing...', $driverName = $this->getShortDriverName($driver)));
 
         $tables = [];
-        $title = $driver->read($driver->firstRow());
+        $titles = $driver->read($driver->firstRow());
         for ($colIndex = $driver->firstColumn(); $colIndex <= $driver->lastColumn(); $colIndex++) {
             $tableOrder = null;
             foreach ($this->fieldsMap as $table) {
-                if (isset($table[$title[$colIndex]])) {
+                if (isset($table[$titles[$colIndex]])) {
                     $tableOrder = $this->getTableOrder($table['__table']);
-                    $fieldOrder = $this->getFieldOrder($title[$colIndex], $table['__table']);
-                    $tables[$tableOrder][$fieldOrder] = ['index' => $colIndex, 'name' => $title[$colIndex]];
+                    $fieldOrder = $this->getFieldOrder($titles[$colIndex], $table['__table']);
+                    $tables[$tableOrder][$fieldOrder] = ['index' => $colIndex, 'name' => $titles[$colIndex]];
                 } elseif (isset($table['__dynamic'])) {
                     if (!isset($indexStartAfter)
                         && isset($table['__options']['startAfter'])
-                        && ($table['__options']['startAfter'] == $title[$colIndex])
+                        && ($table['__options']['startAfter'] == $titles[$colIndex])
                     ) {
                         $indexStartAfter = $colIndex; // find 'startAfter' column index
-                    } elseif (isset($indexStartAfter) && $indexStartAfter < $colIndex && ($title[$colIndex] = trim($title[$colIndex]))) {
+                    } elseif (isset($indexStartAfter) && $indexStartAfter < $colIndex && ($titles[$colIndex] = trim($titles[$colIndex]))) {
                         $tableOrder = $this->getTableOrder($table['__table']);
-                        $tables[$tableOrder][] = ['index' => $colIndex, 'name' => $title[$colIndex]];
-                        $this->fieldsMap[$tableOrder][$title[$colIndex]] = $table['__dynamic'];
+                        $tables[$tableOrder][] = ['index' => $colIndex, 'name' => $titles[$colIndex]];
+                        $this->fieldsMap[$tableOrder][$titles[$colIndex]] = $table['__dynamic'];
                     }
                 }
             }
-            if (isset($tables[$tableOrder])) {
-                ksort($tables[$tableOrder]);
-            }
         }
+
         ksort($tables);
+        $tableNums = count($tables);
+        for ($i = 0; $i < $tableNums; $i++) {
+            ksort($tables[$i]);
+        }
 
         $successCounter = 0;
         // Skip head row
@@ -547,17 +549,18 @@ class Importer
     protected function handleField($value, $params, & $row)
     {
         try {
-            $codename = $this->getCurrentFieldsMap('__codename');
-            $this->configHandler->getVariably()->set('fields', $row);
-            #$this->configHandler->getVariably()->set('originFields', $row);
-            $this->configHandler->getVariably()->set($codename, $row);
-
             $value = $this->configHandler->process($value, $params);
         } catch (\Exception $e) {
             $this->log('error', $e);
         }
 
         $this->preprocessor->correlate($row, $value, $params);
+
+        $codename = $this->getCurrentFieldsMap('__codename');
+        $this->configHandler->getVariably()->set('fields', $row);
+        #$this->configHandler->getVariably()->set('originFields', $row);
+        $this->configHandler->getVariably()->set($codename, $row);
+
 
         return $row;
     }
