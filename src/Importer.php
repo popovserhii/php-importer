@@ -211,7 +211,7 @@ class Importer
         for ($colIndex = $driver->firstColumn(); $colIndex <= $driver->lastColumn(); $colIndex++) {
             $tableOrder = null;
             foreach ($this->fieldsMap as $table) {
-                if (isset($table[$titles[$colIndex]])) {
+                if (isset($titles[$colIndex]) && isset($table[$titles[$colIndex]])) {
                     $tableOrder = $this->getTableOrder($table['__table']);
                     $fieldOrder = $this->getFieldOrder($titles[$colIndex], $table['__table']);
                     $tables[$tableOrder][$fieldOrder] = ['index' => $colIndex, 'name' => $titles[$colIndex]];
