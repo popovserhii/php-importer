@@ -91,8 +91,6 @@ class Importer
 
     protected $timeExecution;
 
-    protected $preparedFields = [];
-
     public function __construct(
         Db $db,
         ConfigHandler $configHandler,
@@ -106,17 +104,14 @@ class Importer
         $this->db = $db;
         $this->configHandler = $configHandler;
         $this->preprocessor = $preprocessor;
-        #$this->configHandler = $preprocessor->getConfigHandler();
         $this->driverCreator = $driverCreator ?? new DriverCreator(null, []);
         $this->observable = $observable;
         $this->logger = $logger;
 
-        $this->driverCreator->setConfig($config['importer'] ?? $config);
-        $this->configHandler->setConfig($config['importer'] ?? $config)
-            ->getVariably()->set('importer', $this);
-
-        $this->config = $config['importer'] ?? $config;
+        $config && $this->setConfig($config);
     }
+
+    protected $preparedFields = [];
 
     public function getDb()
     {
@@ -168,6 +163,17 @@ class Importer
         return $this;
     }
 
+    public function setConfig(array $config)
+    {
+        $this->driverCreator->setConfig($config['importer'] ?? $config);
+        $this->configHandler->setConfig($config['importer'] ?? $config)
+            ->getVariably()->set('importer', $this);
+
+        $this->config = $config['importer'] ?? $config;
+        
+        return $this;
+    }
+    
     public function import($task, $source)
     {
         $this->profiling();
