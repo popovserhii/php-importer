@@ -46,7 +46,7 @@ class Csv implements DriverInterface
     /**
      * @return bool|resource
      */
-    public function getResource()
+    public function resource()
     {
         if (!$this->fp) {
             $this->fp = fopen($this->source(), 'r');
@@ -93,7 +93,7 @@ class Csv implements DriverInterface
      */
     public function lastRow()
     {
-        return count(file($this->source));
+        return count(file($this->source()));
     }
 
     public function read($row, $column = null)
@@ -101,8 +101,8 @@ class Csv implements DriverInterface
         $value = [];
         if (is_null($column)) {
             if (!$this->headers) {
-                $realRow = fgetcsv($this->getResource(), 0, $this->config['delimiter']);
-                $this->headers = str_replace("-", "_", $realRow);
+                $realRow = fgetcsv($this->resource(), 0, $this->config['delimiter']);
+                $this->headers = str_replace('-', '_', $realRow);
             }
 
             if ($row === 0) {
@@ -110,7 +110,7 @@ class Csv implements DriverInterface
             }
 
             $value = [];
-            $realRow = fgetcsv($this->getResource(), 0, $this->config['delimiter']);
+            $realRow = fgetcsv($this->resource(), 0, $this->config['delimiter']);
             foreach ($this->headers as $index => $title) {
                 $value[$title] = $realRow[$index];
             }
